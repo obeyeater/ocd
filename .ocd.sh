@@ -1,5 +1,5 @@
 # OCD: Obesssive Compulsive Directory
-# See https://github.com/obeyeater/ocd for detailed information.
+# See https://github.com/nycksw/ocd for detailed information.
 #
 # Functions and usage:
 #   ocd-restore:        pull from git master and copy files to homedir
@@ -11,7 +11,7 @@
 #   ocd-status:         check if OK or Behind
 
 OCD_IGNORE_RE="^\./(README|\.git/)"
-OCD_REPO="git@github.com:obeyeater/dotfiles.git"
+OCD_REPO="git@github.com:nycksw/dotfiles.git"
 OCD_DIR="${HOME}/.ocd"
 
 ocd::err()  { echo "$@" >&2; }
