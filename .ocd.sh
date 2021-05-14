@@ -1,5 +1,5 @@
 # OCD: Obesssive Compulsive Directory
-# See https://github.com/nycksw/ocd for detailed information.
+# See https://github.com/obeyeater/ocd for detailed information.
 #
 # Functions and usage:
 #   ocd-restore:        pull from git master and copy files to homedir
@@ -239,9 +239,21 @@ if [[ ! -d "${OCD_DIR}/.git" ]]; then
           echo "It looks like you're starting with a fresh repository."
           echo "Be sure to run: ocd-add ${BASH_SOURCE}"
         fi
-        if [[ ! -f "${HOME}.favdebs" ]]; then
-          echo "You may want to add: ${HOME}/.favdebs"
-        fi
     fi
   fi
 fi
+
+#if [[ -d ${OCD_DIR} ]]; then
+#  # Check if state is behind the master.
+#  pushd ${OCD_DIR} >/dev/null
+#  # Why the fuck does git fetch write this to stderr?
+#  git fetch -v --dry-run 2>&1 | grep -q "up to date" || \
+#    echo "OCD is behind master."
+#  popd >/dev/null
+#
+#  # Check if there are uncommitted changes.
+#  pushd ${OCD_DIR} >/dev/null
+#  git status | grep -q "not staged for commit" && \
+#    echo "OCD has unpushed changes."
+#  popd >/dev/null
+#fi
