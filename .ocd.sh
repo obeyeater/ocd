@@ -198,39 +198,18 @@ ocd-rm() {
 if [[ ! -d "${OCD_DIR}/.git" ]]; then
   echo "OCD not installed! running install script..."
 
-  # A correct SSH identity needs to be available for the RW git repository.
+  # Check if we need SSH auth for getting the repo.
+  if [[ "${OCD_REPO}" == *"@"* ]]; then
 
-  # Check if an ssh-agent is active with identities in memory.
-  get_idents() { ssh-add -l 2>/dev/null; }
+    # Check if an ssh-agent is active with identities in memory.
+    get_idents() { ssh-add -l 2>/dev/null; }
 
-  # If there are no identities, add some.
-  if [[ -z "$(get_idents)" ]];then
-    ssh-add 2>/dev/null
-  fi
-
-  # If there are still no identities, ask to copy some from another host.
-  if [[ -z "$(get_idents)" ]]; then
-    if ocd::yesno "No SSH identities! Copy them from another host?"; then
-      echo -n "Enter user@hostname: "
-      read source_host
-      mkdir -p "${HOME}/.ssh"
-      if scp "${source_host}:.ssh/id*" .ssh/ ; then
-        echo "SSH identities copied from \"${source_host}\"."
-        unset source_host
-      else
-        ocd::err "Failed to copy SSH identities."
+    if [[ -z "$(get_idents)" ]]; then
+      if ! ocd::yesno "No SSH identities are available for \"${OCD_REPO}\". Continue anyway?"
+      then
+        ocd::err "Quitting due to missing SSH identities."
         return 1
       fi
-      echo "Starting an agent and adding identities..."
-      ssh-agent > .ssh/agent.$(hostname)
-      source .ssh/agent.$(hostname) 2>/dev/null
-      ssh-add
-      if [[ -z "$(get_idents)" ]]; then
-        ocd::err "Still no SSH identites; something went wrong :("
-        return 1
-      fi
-    else
-      return 1
     fi
   fi
 
