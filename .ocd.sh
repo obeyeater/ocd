@@ -1,5 +1,5 @@
 # OCD: Obesssive Compulsive Directory
-# See https://github.com/obeyeater/ocd for detailed information.
+# See https://github.com/nycksw/ocd for detailed information.
 #
 # Functions and usage:
 #   ocd-restore:        pull from git master and copy files to homedir
@@ -154,8 +154,13 @@ ocd-add() {
   mkdir -p "${OCD_DIR}/${relpath}"
   ln -f "${HOME}${relpath}/${base}" "${OCD_DIR}${relpath}/${base}"
   pushd "${OCD_DIR}" >/dev/null
-  git add ".${relpath}/${base}" && echo "Added: $1"
+  git add ".${relpath}/${base}" && echo "Tracking: $1"
   popd >/dev/null
+
+  # If there are more arguments, call self.
+  if [[ ! -z "$2" ]]; then
+    ocd-add "${@:2}"
+  fi
 }
 
 ocd-rm() {
@@ -175,15 +180,17 @@ ocd-rm() {
     return 1
   fi
   pushd "${OCD_DIR}/${relpath}" >/dev/null
-  echo -n "git: "
-  git rm -f "${base}"
+  git rm -f "${base}" 1>/dev/null && echo "Untracking: $1" 
   popd >/dev/null
 
   # Clean directory if empty.
   rm -d "${OCD_DIR}/${relpath}" 2>/dev/null
 
-  echo "File \"$1\" no longer tracked in $OCD_DIR."
-  echo "To commit change run: ocd-backup"
+  # If there are more arguments, call self.
+  if [[ ! -z "$2" ]]; then
+    ocd-rm "${@:2}"
+  fi
+
   return 0
 }
 
@@ -242,18 +249,3 @@ if [[ ! -d "${OCD_DIR}/.git" ]]; then
     fi
   fi
 fi
-
-#if [[ -d ${OCD_DIR} ]]; then
-#  # Check if state is behind the master.
-#  pushd ${OCD_DIR} >/dev/null
-#  # Why the fuck does git fetch write this to stderr?
-#  git fetch -v --dry-run 2>&1 | grep -q "up to date" || \
-#    echo "OCD is behind master."
-#  popd >/dev/null
-#
-#  # Check if there are uncommitted changes.
-#  pushd ${OCD_DIR} >/dev/null
-#  git status | grep -q "not staged for commit" && \
-#    echo "OCD has unpushed changes."
-#  popd >/dev/null
-#fi
