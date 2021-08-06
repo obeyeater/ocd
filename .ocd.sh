@@ -14,6 +14,9 @@ OCD_IGNORE_RE="^\./(README|\.git/)"
 OCD_REPO="git@github.com:nycksw/dotfiles.git"
 OCD_DIR="${HOME}/.ocd"
 
+# Disable interactive prompts.
+GIT_SSH_COMMAND="ssh -oBatchMode=yes"
+
 ocd::err()  { echo "$@" >&2; }
 
 ocd::yesno() {
@@ -217,14 +220,15 @@ if [[ ! -d "${OCD_DIR}/.git" ]]; then
   if ocd::yesno "Fetch from git repository \"${OCD_REPO}?\""; then
     if ! which git >/dev/null; then
       echo "Installing git..."
-      sudo apt-get install git-core
+      sudo apt-get install -y git
     fi
     if git clone "${OCD_REPO}" "${OCD_DIR}" ; then
-        echo "Done! to finish, run: ocd-restore && source .bashrc"
-        if [[ ! -f "${OCD_DIR}/$(basename ${BASH_SOURCE})" ]]; then
-          echo "It looks like you're starting with a fresh repository."
-          echo "Be sure to run: ocd-add ${BASH_SOURCE}"
-        fi
+        ocd-restore && source .bashrc
+    fi
+    if [[ ! -z "$(ocd-missing-debs)" ]]; then
+      if ocd::yesno "Install missing debs? (`ocd-missing-debs|xargs`)"; then
+        sudo apt-get install -y `ocd-missing-debs`
+      fi
     fi
   fi
 fi
