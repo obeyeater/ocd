@@ -7,36 +7,39 @@
 # To install, just source this file from bash.
 #
 # Functions and usage:
-#   ocd-restore:        pull from git master and copy files to homedir
-#   ocd-backup:         push all local changes to master
 #   ocd-add:            track a new file in the repository
 #   ocd-rm:             stop tracking a file in the repository
+#   ocd-restore:        pull from git master and copy files to homedir
+#   ocd-backup:         push all local changes to master
+#   ocd-status:         check if a file is tracked, or if there are uncommited changes
 #   ocd-missing-pkgs:   compare system against ${OCD_HOME}/.favpkgs, report missing
-#   ocd-status:         check if OK or Behind
 
 OCD_IGNORE_RE="^\./(README|\.git/)"
 OCD_REPO="git@github.com:nycksw/dotfiles.git"
-OCD_DIR="${OCD_HOME}/.ocd"
 OCD_HOME="${HOME}"
+OCD_DIR="${OCD_HOME}/.ocd"
 OCD_FAV_PKGS="${OCD_HOME}/.favpkgs"
 
-# OCD only works on Debian and NixOS.
-if uname -v | grep -q 'Debian'; then
-  OCD_DIST="debian"
-elif uname -v | grep -q 'NixOS'; then
-  OCD_DIST="nixos"
-else
-  OCD_ERR "Couldn't detect which distribution we're using."
-  return 1
-fi
-
 OCD_ERR()  { echo "$*" >&2; }
+
+# OCD needs git, or at least a package manager (apt or nix) to install it. We can also
+# use this to install packages via ocd-missing-pkgs based on user preferences.
+if command -v dpkg >/dev/null; then
+  OCD_PKG_MGR="dpkg"
+elif command -v nix-env >/dev/null; then
+  OCD_PKG_MGR="nix"
+else
+  if ! command -v git >/dev/null; then
+    OCD_ERR "Couldn't find git or install it."
+    return 1
+  fi
+fi
 
 OCD_FILE_SPLIT() {
   # We do a lot of manipulating files based on paths relative to different
   # directories, so this helper function does some sanity checking to ensure
   # we're only dealing with regular files, and the splits the path and filename
-  # into useful chunks relative to the user's homedir.
+  # into useful chunks.
 
   if [[ ! -f "$1" ]]; then
     OCD_ERR "$1 is not a regular file."
@@ -48,16 +51,16 @@ OCD_FILE_SPLIT() {
 }
 
 OCD_ASK() {
-  echo -n "$* (y/n): "
+  echo -n "$* (yes/no): "
   while true; do
     local answer
     read -r answer
-    if [[ ${answer} == "y"* ]];then
+    if [[ ${answer} == "yes" ]];then
       return 0
-    elif [[ ${answer} == "n"* ]];then
+    elif [[ ${answer} == "no" ]];then
       return 1
     else
-      echo -n "$* (y/n): "
+      echo -n "$* (yes/no): "
     fi
   done
 }
@@ -69,12 +72,12 @@ OCD_INSTALL() {
 
   echo "Installing ${1}..."
 
-  if [[ "${OCD_DIST}" == "debian" ]]; then
+  if [[ "${OCD_PKG_MGR}" == "dpkg" ]]; then
     sudo apt-get install -y "$1"
-  elif [[ "${OCD_DIST}" == "nixos" ]]; then
+  elif [[ "${OCD_PKG_MGR}" == "nix" ]]; then
     nix-env -i "$1"
   else
-    OCD_ERR "Couldn't detect which distribution we're using."
+    OCD_ERR "Couldn't detect a suitable package manager."
     return 1
   fi
 
@@ -85,7 +88,7 @@ OCD_INSTALL() {
 }
 
 # The remaining functions are named in lowercase and with dashes, as they
-# are used as CLI functions.
+# are intended as CLI utilities.
 
 ocd-restore() {
   if [[ ! -d "${OCD_DIR}" ]]; then
@@ -108,6 +111,14 @@ ocd-restore() {
   for dir in ${dirs}; do
     mkdir -p "${OCD_HOME}/${dir}"
   done
+
+  # If we're making changes to ~/.ocd.sh outside of the repo, it's easy to accidentally
+  # lose them when restoring from the repo. Check for this condition and keep the mods.
+  if [[ -f ./.ocd.sh ]] && ! cmp ./.ocd.sh ../.ocd.sh >/dev/null; then
+    echo "Note: the local version of ocd.sh differs from the one in your repo."
+    echo "Keeping the local version, and adding it to '${OCD_DIR}'."
+    cp ${OCD_HOME}/.ocd.sh ${OCD_DIR}/.ocd.sh
+  fi
 
   echo -n "Restoring"
   for file in ${files}; do
@@ -132,6 +143,7 @@ ocd-restore() {
 
 ocd-backup() {
   pushd "${OCD_DIR}" >/dev/null
+  echo -e "git status in $(pwd):\n"
   git status
   if ! git status | grep -q "nothing to commit"; then
     git diff
@@ -144,7 +156,7 @@ ocd-backup() {
 }
 
 ocd-status() {
-  # If given an argument, check whether it's a file being tracked in the repo.
+  # If an arg is passed, assume it's a file and report on whether it's tracked.
   if [[ -n "$1" ]]; then
     OCD_FILE_SPLIT ${1}
 
@@ -156,26 +168,23 @@ ocd-status() {
     return 0
   fi
 
-  # If no args were passed, just run `git status` instead.
+  # If no args were passed, run `git status` instead.
+
   pushd "${OCD_DIR}" >/dev/null
   git status
-  popd >/dev/null && return
+  popd >/dev/null
 }
 
 ocd-missing-pkgs() {
   [[ -f "$OCD_FAV_PKGS" ]] || touch "$OCD_FAV_PKGS"
 
-  # Debian
-  if [[ "${OCD_DIST}" == "debian" ]]; then
+  if [[ "${OCD_PKG_MGR}" == "dpkg" ]]; then
     dpkg --get-selections | grep '\sinstall$' | awk '{print $1}' | sort \
         | comm -13 - <(grep -Ev '(^-|^ *#)' "$OCD_FAV_PKGS" \
         | sed 's/ *#.*$//' |sort)
-
-  # NixOS
-  elif [[ "${OCD_DIST}" == "nixos" ]]; then
+  elif [[ "${OCD_PKG_MGR}" == "nix" ]]; then
     # TODO:implement missing pkg check for NixOS
     OCD_ERR "Notice: Checking .favpkgs not yet implemented on NixOS."
-    return 1
 
   else
     OCD_ERR "Couldn't detect which distribution we're using."
@@ -185,7 +194,7 @@ ocd-missing-pkgs() {
 
 ocd-add() {
   if [[ -z "$1" ]];then
-    OCD_ERR "Usage: ocd-add <filename>"
+    ocd:err "Usage: ocd-add <filename>"
     return 1
   fi
 
@@ -271,7 +280,12 @@ if [[ ! -d "${OCD_DIR}/.git" ]]; then
     fi
   fi
 
-  echo "Make sure you source ~/.ocd.sh from bashrc or similar."
+  # Add this script to the repo if it's not already there.
+  if [[ ! -f "${OCD_DIR}/.ocd.sh" ]]; then
+    ocd-add "${OCD_HOME}"/.ocd.sh
+  fi
+
+  echo "[IMPORTANT!] Don't forget to source ${OCD_HOME}/.ocd.sh on login."
 fi
 
 alias ocd="pushd \${OCD_HOME}/.ocd"

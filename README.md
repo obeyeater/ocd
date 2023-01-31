@@ -8,7 +8,7 @@ Using this script, you may take a freshly installed operating system and
 set it up with just two or three commands, like so:
 
 ```
-    curl https://raw.githubusercontent.com/nycksw/ocd/master/.ocd.sh -o ~/.ocd.sh
+    curl https://raw.githubusercontent.com/nycksw/ocd/master/ocd.sh -o ~/.ocd.sh
     vim ~/.ocd.sh  # Change OCD_REPO to your own repository.
     source ~/.ocd.sh
 ```
@@ -27,7 +27,7 @@ Sourcing the `ocd.sh` script does the following on its first invocation:
   * [Create an empty GitHub repo](https://help.github.com/articles/create-a-repo/) for your dotfiles.
     * You'll need the repo identifier in a moment, something like: `git@github.com:username/dotfiles.git`
     * If you're not forwarding the appropriate SSH identity for the repo you'll be using, you'll still need to set that up manually, either via forwarding or by manually copying your key to the host and running an ssh-agent locally.
-  * `curl https://raw.githubusercontent.com/nycksw/ocd/master/.ocd.sh -o ~/.ocd.sh`
+  * `curl https://raw.githubusercontent.com/nycksw/ocd/master/ocd.sh -o ~/.ocd.sh`
   * `vim ~/.ocd.sh` and change `OCD_REPO` to point to your own repository.
   * `source ~/.ocd.sh` to install the system and create all the hardlinks.
   * Add all the additional dotfiles you want to track by doing `ocd-add <filename>`
