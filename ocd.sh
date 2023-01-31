@@ -14,11 +14,13 @@
 #   ocd-status:         check if a file is tracked, or if there are uncommited changes
 #   ocd-missing-pkgs:   compare system against ${OCD_HOME}/.favpkgs, report missing
 
-OCD_IGNORE_RE="^\./(README|\.git/)"
-OCD_REPO="git@github.com:nycksw/dotfiles.git"
-OCD_HOME="${HOME}"
-OCD_DIR="${OCD_HOME}/.ocd"
-OCD_FAV_PKGS="${OCD_HOME}/.favpkgs"
+OCD_IGNORE_RE="/\.git/"
+
+# These defaults may be overridden via the environment; see unit tests for examples.
+OCD_REPO="${OCD_REPO:-git@github.com:nycksw/dotfiles.git}"
+OCD_HOME="${OCD_HOME:-$HOME}"
+OCD_DIR="${OCD_DIR:-${HOME}/.ocd}"
+OCD_FAV_PKGS="${OCD_FAV_PKGS:-$OCD_HOME/.favpkgs}"
 
 OCD_ERR()  { echo "$*" >&2; }
 
@@ -94,19 +96,18 @@ ocd-restore() {
   if [[ ! -d "${OCD_DIR}" ]]; then
     echo "${OCD_DIR}: doesn't exist!" && return
   fi
-  pushd "${OCD_DIR}" >/dev/null
+
   echo "Running: git-pull:"
-  git pull || {
+  git -C "${OCD_DIR}" pull || {
     OCD_ERR  "error: couldn't git-pull; check status in ${OCD_DIR}"
-    popd >/dev/null
     return 1
   }
 
   local files
   local dirs
 
-  files=$(find . -type f -o -type l | grep -Ev  "${OCD_IGNORE_RE}")
-  dirs=$(find . -type d | grep -Ev  "${OCD_IGNORE_RE}")
+  files=$(cd ${OCD_DIR}; find . -type f -o -type l | grep -Ev  "${OCD_IGNORE_RE}")
+  dirs=$(cd ${OCD_DIR}; find -type d | grep -Ev  "${OCD_IGNORE_RE}")
 
   for dir in ${dirs}; do
     mkdir -p "${OCD_HOME}/${dir}"
@@ -114,31 +115,32 @@ ocd-restore() {
 
   # If we're making changes to ~/.ocd.sh outside of the repo, it's easy to accidentally
   # lose them when restoring from the repo. Check for this condition and keep the mods.
-  if [[ -f ./.ocd.sh ]] && ! cmp ./.ocd.sh ../.ocd.sh >/dev/null; then
+  if [[ -f "${OCD_DIR}/.ocd.sh" ]] && \
+      ! cmp "${OCD_DIR}/.ocd.sh" "${BASH_SOURCE[0]}" >/dev/null; then
     echo "Note: the local version of ocd.sh differs from the one in your repo."
     echo "Keeping the local version, and adding it to '${OCD_DIR}'."
-    cp ${OCD_HOME}/.ocd.sh ${OCD_DIR}/.ocd.sh
+    cp "${BASH_SOURCE[0]}" ${OCD_DIR}/.ocd.sh
   fi
 
-  echo -n "Restoring"
+  echo  "Restoring..."
+
   for file in ${files}; do
-    echo -n .
     dst="${OCD_HOME}/${file}"
+    echo "  ${file} -> ${dst}"
     if [[ -f "${dst}" ]]; then
       rm -f "${dst}"
     fi
-    ln "${file}" "${dst}"
+    ln "${OCD_DIR}/${file}" "${dst}"
   done
-  echo
 
   # Some changes require cleanup that OCD won't handle; e.g., if you rename
   # a file the old file will remain. Housekeeping commands that need to be
   # run may be put in ${OCD_DIR}/.ocd_cleanup; they run only once.
-  if ! cmp "${OCD_HOME}"/.ocd_cleanup{,_ran} &>/dev/null; then
+  if [[ -f "${OCD_HOME}/.ocd_cleanup" ]] && \
+      ! cmp "${OCD_HOME}"/.ocd_cleanup{,_ran} &>/dev/null; then
     echo -e "Running: ${OCD_HOME}/.ocd_cleanup:"
     "${OCD_HOME}/.ocd_cleanup" && cp "${OCD_HOME}"/.ocd_cleanup{,_ran}
   fi
-  popd >/dev/null
 }
 
 ocd-backup() {
@@ -266,12 +268,19 @@ if [[ ! -d "${OCD_DIR}/.git" ]]; then
   fi
 
   # Fetch the repository.
+
   if ! which git >/dev/null; then
     OCD_INSTALL git
   fi
 
   if git clone "${OCD_REPO}" "${OCD_DIR}" ; then
-      ocd-restore && source .bashrc
+    ocd-restore
+    if [[ -f .bashrc ]]; then
+      source .bashrc
+    fi
+  else
+    OCD_ERR "Couldn't clone repository: ${OCD_REPO}"
+    return 1
   fi
 
   if [[ -n "$(ocd-missing-pkgs)" ]]; then
@@ -282,10 +291,13 @@ if [[ ! -d "${OCD_DIR}/.git" ]]; then
 
   # Add this script to the repo if it's not already there.
   if [[ ! -f "${OCD_DIR}/.ocd.sh" ]]; then
-    ocd-add "${OCD_HOME}"/.ocd.sh
+    echo "Adding this script to ${OCD_HOME}/.ocd.sh and tracking in repo."
+    cp "${BASH_SOURCE[0]}" "${OCD_HOME}/.ocd.sh"
+    ocd-add "${OCD_HOME}/.ocd.sh"
   fi
 
-  echo "[IMPORTANT!] Don't forget to source ${OCD_HOME}/.ocd.sh on login."
+  echo "DON'T FORGET to source ${OCD_HOME}/.ocd.sh via .bash_profile or something similar."
+  echo "...something like: test -f ~/.ocd.sh && source ~/.ocd.sh"
 fi
 
 alias ocd="pushd \${OCD_HOME}/.ocd"
