@@ -22,6 +22,8 @@ OCD_HOME="${OCD_HOME:-$HOME}"
 OCD_DIR="${OCD_DIR:-${HOME}/.ocd}"
 OCD_FAV_PKGS="${OCD_FAV_PKGS:-$OCD_HOME/.favpkgs}"
 
+OCD_ASSUME_YES="${OCD_ASSUME_YES:-false}"  # Set to true for non-interactive/testing.
+
 OCD_ERR()  { echo "$*" >&2; }
 
 # OCD needs git, or at least a package manager (apt or nix) to install it. We can also
@@ -53,12 +55,15 @@ OCD_FILE_SPLIT() {
 }
 
 OCD_ASK() {
+  if [[ "${OCD_ASSUME_YES}" == "true" ]]; then
+    return
+  fi
   echo -n "$* (yes/no): "
   while true; do
     local answer
     read -r answer
     if [[ ${answer} == "yes" ]];then
-      return 0
+      return
     elif [[ ${answer} == "no" ]];then
       return 1
     else
@@ -67,7 +72,7 @@ OCD_ASK() {
   done
 }
 
-OCD_INSTALL() {
+OCD_INSTALL_PKG() {
   if [[ -z "$1" ]]; then
     return 1
   fi
@@ -85,7 +90,7 @@ OCD_INSTALL() {
 
   # If there are more arguments, call self recursively.
   if [[ -n "$2" ]]; then
-    OCD_INSTALL "${@:2}"
+    OCD_INSTALL_PKG "${@:2}"
   fi
 }
 
@@ -125,7 +130,7 @@ ocd-restore() {
   echo  "Restoring..."
 
   for file in ${files}; do
-    dst="${OCD_HOME}/${file}"
+    dst="$(realpath -s ${OCD_HOME}/${file})"
     echo "  ${file} -> ${dst}"
     if [[ -f "${dst}" ]]; then
       rm -f "${dst}"
@@ -200,7 +205,7 @@ ocd-add() {
     return 1
   fi
 
-  OCD_FILE_SPLIT ${1}
+  OCD_FILE_SPLIT ${1} || return 1
 
   mkdir -p "${OCD_DIR}/${OCD_FILE_REL}"
   ln -f "${OCD_HOME}/${OCD_FILE_REL}/${OCD_FILE_BASE}" "${OCD_DIR}/${OCD_FILE_REL}/${OCD_FILE_BASE}"
@@ -270,7 +275,7 @@ if [[ ! -d "${OCD_DIR}/.git" ]]; then
   # Fetch the repository.
 
   if ! which git >/dev/null; then
-    OCD_INSTALL git
+    OCD_INSTALL_PKG git
   fi
 
   if git clone "${OCD_REPO}" "${OCD_DIR}" ; then
@@ -285,7 +290,7 @@ if [[ ! -d "${OCD_DIR}/.git" ]]; then
 
   if [[ -n "$(ocd-missing-pkgs)" ]]; then
     if OCD_ASK "Install missing pkgs? ($(ocd-missing-pkgs|xargs))"; then
-      OCD_INSTALL "$(ocd-missing-pkgs)"
+      OCD_INSTALL_PKG "$(ocd-missing-pkgs)"
     fi
   fi
 
