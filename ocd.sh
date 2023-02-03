@@ -7,22 +7,26 @@
 # To install, just source this file from bash.
 #
 # Functions and usage:
-#   ocd-add:            track a new file in the repository
-#   ocd-rm:             stop tracking a file in the repository
+#   ocd-add FILE:       track a new file in the repository
+#   ocd-rm FILE:        stop tracking a file in the repository
 #   ocd-restore:        pull from git master and copy files to homedir
 #   ocd-backup:         push all local changes to master
-#   ocd-status:         check if a file is tracked, or if there are uncommited changes
+#   ocd-status [FILE]:  check if a file is tracked, or if there are uncommited changes
+#   ocd-export FILE:    create a tar.gz archive with everything in '~/.ocd'.
 #   ocd-missing-pkgs:   compare system against ${OCD_HOME}/.favpkgs, report missing
 
-OCD_IGNORE_RE="/\.git/"
+OCD_IGNORE_RE="./.git"
 
 # These defaults may be overridden via the environment; see unit tests for examples.
 OCD_REPO="${OCD_REPO:-git@github.com:nycksw/dotfiles.git}"
 OCD_HOME="${OCD_HOME:-$HOME}"
 OCD_DIR="${OCD_DIR:-${HOME}/.ocd}"
 OCD_FAV_PKGS="${OCD_FAV_PKGS:-$OCD_HOME/.favpkgs}"
-
 OCD_ASSUME_YES="${OCD_ASSUME_YES:-false}"  # Set to true for non-interactive/testing.
+
+# Options for linking to files in the repo.
+#OCD_LN_OPTS=""    # Leave options empty to create hard links.
+OCD_LN_OPTS="-sr"  # Create relative symbolic links.
 
 OCD_ERR()  { echo "$*" >&2; }
 
@@ -99,7 +103,7 @@ OCD_INSTALL_PKG() {
 
 ocd-restore() {
   if [[ ! -d "${OCD_DIR}" ]]; then
-    echo "${OCD_DIR}: doesn't exist!" && return
+    OCD_ERR "${OCD_DIR}: doesn't exist!" && return
   fi
 
   echo "Running: git-pull:"
@@ -108,11 +112,8 @@ ocd-restore() {
     return 1
   }
 
-  local files
-  local dirs
-
   files=$(cd ${OCD_DIR}; find . -type f -o -type l | grep -Ev  "${OCD_IGNORE_RE}")
-  dirs=$(cd ${OCD_DIR}; find -type d | grep -Ev  "${OCD_IGNORE_RE}")
+  dirs=$(cd ${OCD_DIR}; find . -type d | grep -Ev  "${OCD_IGNORE_RE}")
 
   for dir in ${dirs}; do
     mkdir -p "${OCD_HOME}/${dir}"
@@ -122,8 +123,10 @@ ocd-restore() {
   # lose them when restoring from the repo. Check for this condition and keep the mods.
   if [[ -f "${OCD_DIR}/.ocd.sh" ]] && \
       ! cmp "${OCD_DIR}/.ocd.sh" "${BASH_SOURCE[0]}" >/dev/null; then
-    echo "Note: the local version of ocd.sh differs from the one in your repo."
-    echo "Keeping the local version, and adding it to '${OCD_DIR}'."
+    echo "NOTE: the local version of ocd.sh differs from the one in the repo."
+    echo "  Keeping the local version, and adding it to '${OCD_DIR}'."
+    echo "  Use 'git checkout -f ${OCD_DIR}/.ocd.sh' to overwrite local changes."
+    echo "  Use 'ocd-backup' to commit the local changes to the repo."
     cp "${BASH_SOURCE[0]}" ${OCD_DIR}/.ocd.sh
   fi
 
@@ -135,7 +138,7 @@ ocd-restore() {
     if [[ -f "${dst}" ]]; then
       rm -f "${dst}"
     fi
-    ln "${OCD_DIR}/${file}" "${dst}"
+    ln ${OCD_LN_OPTS} "${OCD_DIR}/${file}" "${dst}"
   done
 
   # Some changes require cleanup that OCD won't handle; e.g., if you rename
@@ -245,6 +248,17 @@ ocd-rm() {
   fi
 
   return 0
+}
+
+ocd-export() {
+  # Create a tar.gz archive with everything in ~/.ocd. This is useful for
+  # exporting your dotfiles to another host where you don't want to run OCD.
+
+  if [[ -n "$1" ]]; then
+    tar -C ${OCD_DIR} --exclude ${OCD_IGNORE_RE} -czvpf $1 .
+  else
+    OCD_ERR "Must supply a filename for the new tar archive."
+  fi
 }
 
 # If OCD isn't already installed, guide the user through installation.
