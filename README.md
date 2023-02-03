@@ -19,7 +19,7 @@ and usage" for more information on how to set up your own repository.
 Sourcing the `ocd.sh` script does the following on its first invocation:
 
   * Checks if your SSH identity is available (this is necessary to clone a RW git repository).
-  * Installs git(1) if it's not already installed
+  * Installs `git(1)` if it's not already installed
   * Runs `git clone` of your repository into your OCD directory (default is `~/.ocd`)
 
 # Installation and usage
@@ -56,14 +56,14 @@ This way, settings are only applied in the appropriate context.
 When I log in to a system that I haven't worked on in a while, the first thing
 I do is run `ocd-restore`. Any time I make a config change, I run `ocd-backup`.
 
-*Note*: the actual dotfiles are hard-linked to their counterparts in the
+*Note*: the actual dotfiles are linked to their counterparts in the
 local `~/.ocd` git branch, so there's no need to copy changes anywhere before
 committing. Just edit in place and run `ocd-backup`.
 
 There are also helper functions: `ocd-status` tells me if I'm behind the
-master, and `ocd-missing-pkgs` and `ocd-extra-pkgs` tell me if my system's
+master, and `ocd-missing-pkgs` tells me if my installed
 packages differ from my basic preferences recorded in `~/.favpkgs` (for
-example, your openbox autostart may call programs that are not installed
+example, your `openbox` autostart may call programs that are not installed
 by default on a new system; `ocd-missing-pkgs` is just a very simple way
 to record these dependencies and make it easy to install them, e.g.: `sudo
 apt-get install $(ocd-missing-pkgs)`)
@@ -71,6 +71,10 @@ apt-get install $(ocd-missing-pkgs)`)
 Adding new files is just:
   * `ocd-add <filename>`
   * `ocd-backup`
+
+Finally, you may also use `ocd-export filename.tar.gz` to create an archive
+with all your files. This is useful if you'd like to copy your files to
+another host where you don't want to use OCD.
 
 ### Example output
 
