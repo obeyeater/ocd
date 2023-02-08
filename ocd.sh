@@ -31,8 +31,8 @@ OCD_LN_OPTS="-sr"  # Create relative symbolic links.
 
 OCD_ERR()  { echo "$*" >&2; }
 
-# OCD needs git, or at least a package manager (apt or nix) to install it. We can also
-# use this to install packages via ocd-missing-pkgs based on user preferences.
+# OCD needs git, or at least a package manager (apt or nix) to install it. We can also use this to
+# install packages via ocd-missing-pkgs based on user preferences.
 if command -v dpkg >/dev/null; then
   OCD_PKG_MGR="dpkg"
 elif command -v nix-env >/dev/null; then
@@ -44,9 +44,10 @@ else
   fi
 fi
 
-### We do a lot of manipulating files based on paths relative to the user's home directory, so
-### this helper function does some sanity checking to ensure we're only dealing with regular files,
-### and then splits the path and filename into useful chunks, storing them in these ugly globals.
+##########
+# We do a lot of manipulating files based on paths relative to the user's home directory, so this
+# helper function does some sanity checking to ensure we're only dealing with regular files, and
+# then splits the path and filename into useful chunks, storing them in these ugly globals.
 OCD_FILE_SPLIT() {
 
   if [[ ! -f "$1" ]]; then
@@ -58,7 +59,8 @@ OCD_FILE_SPLIT() {
   OCD_FILE_REL=$(dirname "$(realpath -s --relative-to="${OCD_HOME}" "$1")")
 }
 
-### Ask the user if they want to do something.
+##########
+# Ask the user if they want to do something.
 OCD_ASK() {
   if [[ "${OCD_ASSUME_YES}" == "true" ]]; then
     return
@@ -77,7 +79,8 @@ OCD_ASK() {
   done
 }
 
-### Install a package via sudo. (Debian-only) 
+##########
+# Install a package via sudo. (Debian-only) 
 OCD_INSTALL_PKG() {
   if [[ -z "$1" ]]; then
     return 1
@@ -100,13 +103,13 @@ OCD_INSTALL_PKG() {
   fi
 }
 
-# The remaining functions are named in lowercase and with dashes, as they
-# are intended as CLI utilities.
+##########
+# The remaining functions are named in lowercase and with dashes, as they are intended as CLI
+# utilities.
 
-### Pull changes from git, and reflect changes in the user's homedirectory.
+##########
+# Pull changes from git, and push them to  the user's homedirectory.
 ocd-restore() {
-  # TODO: If .ocd.sh changed, should we source it and run this again? Should we sync only
-  #       that file before restoring others?
 
   if [[ ! -d "${OCD_DIR}" ]]; then
     OCD_ERR "${OCD_DIR}: doesn't exist!" && return
@@ -140,17 +143,23 @@ ocd-restore() {
 
   for file in ${files}; do
     dst="$(realpath -s ${OCD_HOME}/${file})"
-    # TODO: only report on restored files if they've changed.
-    echo "  ${file} -> ${dst}"
-    if [[ -f "${dst}" ]]; then
-      rm -f "${dst}"
+    # Only restore file if it doesn't already exist, or if it has changed.
+    if [[ ! -f "${dst}" ]] || cmp "${file}" -> "${dst}"; then
+      echo "  ${file} -> ${dst}"
+      # If ~/.ocd.sh changed, warn the user that they should source it again.
+      if [[ "${dst}" == "${OCD_HOME}/ocd.sh" ]]; then
+        echo "Notice: ocd.sh changed, source it to use new version: source "${OCD_HOME}"/.ocd.sh"
+      fi
+      if [[ -f "${dst}" ]]; then
+        rm -f "${dst}"
+      fi
+      ln ${OCD_LN_OPTS} "${OCD_DIR}/${file}" "${dst}"
     fi
-    ln ${OCD_LN_OPTS} "${OCD_DIR}/${file}" "${dst}"
   done
 
-  # Some changes require cleanup that OCD won't handle; e.g., if you rename
-  # a file the old file will remain. Housekeeping commands that need to be
-  # run may be put in ${OCD_DIR}/.ocd_cleanup; they run only once.
+  # Some changes require cleanup that OCD won't handle; e.g., if you rename a file the old file
+  # will remain. Housekeeping commands that need to be run may be put in ${OCD_DIR}/.ocd_cleanup;
+  # they run only once.
   if [[ -f "${OCD_HOME}/.ocd_cleanup" ]] && \
       ! cmp "${OCD_HOME}"/.ocd_cleanup{,_ran} &>/dev/null; then
     echo -e "Running: ${OCD_HOME}/.ocd_cleanup:"
@@ -158,7 +167,8 @@ ocd-restore() {
   fi
 }
 
-### Show status of local git repo, and optionally commit/push changes upstream.
+##########
+# Show status of local git repo, and optionally commit/push changes upstream.
 ocd-backup() {
   pushd "${OCD_DIR}" >/dev/null
   echo -e "git status in $(pwd):\n"
@@ -173,7 +183,8 @@ ocd-backup() {
   popd >/dev/null
 }
 
-### Show tracking/modified status for a file, or the whole repo.
+##########
+# Show tracking/modified status for a file, or the whole repo.
 ocd-status() {
   # If an arg is passed, assume it's a file and report on whether it's tracked.
   if [[ -n "$1" ]]; then
@@ -194,7 +205,8 @@ ocd-status() {
   popd >/dev/null
 }
 
-### Display which of the user's favorite packages are not installed. (Debian-only) 
+##########
+# Display which of the user's favorite packages are not installed. (Debian-only) 
 ocd-missing-pkgs() {
   [[ -f "$OCD_FAV_PKGS" ]] || touch "$OCD_FAV_PKGS"
 
@@ -212,7 +224,8 @@ ocd-missing-pkgs() {
   fi
 }
 
-### Start tracking a file in the user's home directory. This will add it to the git repo.
+##########
+# Start tracking a file in the user's home directory. This will add it to the git repo.
 ocd-add() {
   if [[ -z "$1" ]];then
     ocd:err "Usage: ocd-add <filename>"
@@ -233,7 +246,8 @@ ocd-add() {
   fi
 }
 
-### Stop tracking a file in the user's home directory. This will remove it to the git repo.
+##########
+# Stop tracking a file in the user's home directory. This will remove it to the git repo.
 ocd-rm() {
   if [[ -z "$1" ]];then
     echo "Usage: ocd-rm <filename>"
@@ -257,8 +271,9 @@ ocd-rm() {
   return 0
 }
 
-### Create a tar.gz archive with everything in ~/.ocd. This is useful for exporting your
-### dotfiles to another host where you don't want to run OCD.
+##########
+# Create a tar.gz archive with everything in ~/.ocd. This is useful for exporting your dotfiles to
+# another host where you don't want to run OCD.
 ocd-export() {
 
   if [[ -n "$1" ]]; then
@@ -269,7 +284,7 @@ ocd-export() {
 }
 
 
-### Everything below runs when this file is sourced.
+# Everything below runs when this file is sourced.
 
 # If OCD isn't already installed, guide the user through installation.
 
