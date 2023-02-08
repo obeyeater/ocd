@@ -148,7 +148,7 @@ ocd-restore() {
       echo "  ${file} -> ${dst}"
       # If ~/.ocd.sh changed, warn the user that they should source it again.
       if [[ "${dst}" == "${OCD_HOME}/ocd.sh" ]]; then
-        echo "Notice: ocd.sh changed, source it to use new version: source "${OCD_HOME}"/.ocd.sh"
+        echo "Notice: ocd.sh changed, source it to use new version: source ${OCD_HOME}/.ocd.sh"
       fi
       if [[ -f "${dst}" ]]; then
         rm -f "${dst}"
