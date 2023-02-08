@@ -29,10 +29,8 @@ setup() {
   touch "${OCD_REPO}"/a/b/c/qux
 
   git init ${OCD_REPO}
-  if pushd "${OCD_REPO}"; then
-    git add .
-    git commit -a -m 'testing'
-	popd; fi
+  git -C "${OCD_REPO}" add .
+  git -C "${OCD_REPO}" commit -a -m 'testing'
 
   # Add an untracked file to the homedir.
   touch "${OCD_HOME}/fred"
