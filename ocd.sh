@@ -15,6 +15,7 @@
 #   ocd-export FILE:    create a tar.gz archive with everything in '~/.ocd'.
 #   ocd-missing-pkgs:   compare system against ${OCD_HOME}/.favpkgs, report missing
 
+# Pattern for files to ignore when doing anything with OCD (find, tar, etc.)
 OCD_IGNORE_RE="./.git"
 
 # These defaults may be overridden via the environment; see unit tests for examples.
@@ -43,11 +44,10 @@ else
   fi
 fi
 
+### We do a lot of manipulating files based on paths relative to the user's home directory, so
+### this helper function does some sanity checking to ensure we're only dealing with regular files,
+### and then splits the path and filename into useful chunks, storing them in these ugly globals.
 OCD_FILE_SPLIT() {
-  # We do a lot of manipulating files based on paths relative to the user's home
-  # directory, so this helper function does some sanity checking to ensure
-  # we're only dealing with regular files, and then splits the path and filename
-  # into useful chunks, storing them in these ugly globals.
 
   if [[ ! -f "$1" ]]; then
     OCD_ERR "$1 is not a regular file."
@@ -58,6 +58,7 @@ OCD_FILE_SPLIT() {
   OCD_FILE_REL=$(dirname "$(realpath -s --relative-to="${OCD_HOME}" "$1")")
 }
 
+### Ask the user if they want to do something.
 OCD_ASK() {
   if [[ "${OCD_ASSUME_YES}" == "true" ]]; then
     return
@@ -76,6 +77,7 @@ OCD_ASK() {
   done
 }
 
+### Install a package via sudo. (Debian-only) 
 OCD_INSTALL_PKG() {
   if [[ -z "$1" ]]; then
     return 1
@@ -101,7 +103,11 @@ OCD_INSTALL_PKG() {
 # The remaining functions are named in lowercase and with dashes, as they
 # are intended as CLI utilities.
 
+### Pull changes from git, and reflect changes in the user's homedirectory.
 ocd-restore() {
+  # TODO: If .ocd.sh changed, should we source it and run this again? Should we sync only
+  #       that file before restoring others?
+
   if [[ ! -d "${OCD_DIR}" ]]; then
     OCD_ERR "${OCD_DIR}: doesn't exist!" && return
   fi
@@ -134,6 +140,7 @@ ocd-restore() {
 
   for file in ${files}; do
     dst="$(realpath -s ${OCD_HOME}/${file})"
+    # TODO: only report on restored files if they've changed.
     echo "  ${file} -> ${dst}"
     if [[ -f "${dst}" ]]; then
       rm -f "${dst}"
@@ -151,6 +158,7 @@ ocd-restore() {
   fi
 }
 
+### Show status of local git repo, and optionally commit/push changes upstream.
 ocd-backup() {
   pushd "${OCD_DIR}" >/dev/null
   echo -e "git status in $(pwd):\n"
@@ -165,6 +173,7 @@ ocd-backup() {
   popd >/dev/null
 }
 
+### Show tracking/modified status for a file, or the whole repo.
 ocd-status() {
   # If an arg is passed, assume it's a file and report on whether it's tracked.
   if [[ -n "$1" ]]; then
@@ -185,6 +194,7 @@ ocd-status() {
   popd >/dev/null
 }
 
+### Display which of the user's favorite packages are not installed. (Debian-only) 
 ocd-missing-pkgs() {
   [[ -f "$OCD_FAV_PKGS" ]] || touch "$OCD_FAV_PKGS"
 
@@ -202,6 +212,7 @@ ocd-missing-pkgs() {
   fi
 }
 
+### Start tracking a file in the user's home directory. This will add it to the git repo.
 ocd-add() {
   if [[ -z "$1" ]];then
     ocd:err "Usage: ocd-add <filename>"
@@ -222,6 +233,7 @@ ocd-add() {
   fi
 }
 
+### Stop tracking a file in the user's home directory. This will remove it to the git repo.
 ocd-rm() {
   if [[ -z "$1" ]];then
     echo "Usage: ocd-rm <filename>"
@@ -245,9 +257,9 @@ ocd-rm() {
   return 0
 }
 
+### Create a tar.gz archive with everything in ~/.ocd. This is useful for exporting your
+### dotfiles to another host where you don't want to run OCD.
 ocd-export() {
-  # Create a tar.gz archive with everything in ~/.ocd. This is useful for
-  # exporting your dotfiles to another host where you don't want to run OCD.
 
   if [[ -n "$1" ]]; then
     tar -C ${OCD_DIR} --exclude ${OCD_IGNORE_RE} -czvpf $1 .
@@ -255,6 +267,9 @@ ocd-export() {
     OCD_ERR "Must supply a filename for the new tar archive."
   fi
 }
+
+
+### Everything below runs when this file is sourced.
 
 # If OCD isn't already installed, guide the user through installation.
 
