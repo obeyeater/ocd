@@ -2,10 +2,16 @@
 #shellcheck disable=SC1091,SC2086,SC2164
 #
 # Unit tests for OCD <https://github.com/nycksw/ocd>.
+#
+# TODO: Test 'ocd-backup' and 'ocd-status'.
 
 
 test_header() {
-  echo -e "\nRunning: ${FUNCNAME[1]}\n"
+  echo -e "\nRUNNING: ${FUNCNAME[1]}\n"
+}
+
+test_fail() {
+  echo -e "\nFAILED: ${FUNCNAME[1]}\n"
 }
 
 setup() {
@@ -38,22 +44,26 @@ test_install() {
 }
 
 test_file_tracking() {
+  # TODO: test multiple args
   test_header
 
 	# Add file from homedir to the repo.
   ocd-add "${OCD_HOME}"/fred
-	test -f "${OCD_DIR}"/fred || echo "failed ${FUNCNAME[0]}"
-  #
+	test -f "${OCD_DIR}"/fred || test_fail
+ 
 	# Stop tracking a file.
   ocd-rm "${OCD_HOME}"/fred
-	test ! -f "${OCD_DIR}"/fred || echo "failed ${FUNCNAME[0]}"
+	test ! -f "${OCD_DIR}"/fred || test_fail
+  ocd-rm "${OCD_HOME}"/a/b/c/qux
+	test ! -f "${OCD_DIR}"/a/b/c/qux || test_fail
 }
 
 test_export() {
+  # TODO: verify archive has expected contents.
   test_header
 
   ocd-export "${OCD_HOME}"/export.tar.gz
-  test -f "${OCD_HOME}"/export.tar.gz || echo "failed ${FUNCNAME[0]}"
+  test -f "${OCD_HOME}"/export.tar.gz || test_fail
 }
 
 teardown() {

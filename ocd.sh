@@ -44,10 +44,10 @@ else
 fi
 
 OCD_FILE_SPLIT() {
-  # We do a lot of manipulating files based on paths relative to different
-  # directories, so this helper function does some sanity checking to ensure
-  # we're only dealing with regular files, and the splits the path and filename
-  # into useful chunks.
+  # We do a lot of manipulating files based on paths relative to the user's home
+  # directory, so this helper function does some sanity checking to ensure
+  # we're only dealing with regular files, and then splits the path and filename
+  # into useful chunks, storing them in these ugly globals.
 
   if [[ ! -f "$1" ]]; then
     OCD_ERR "$1 is not a regular file."
@@ -55,7 +55,7 @@ OCD_FILE_SPLIT() {
   fi
 
   OCD_FILE_BASE=$(basename "$1")
-  OCD_FILE_REL=$(dirname "$(realpath --relative-to="${OCD_HOME}" "$1")")
+  OCD_FILE_REL=$(dirname "$(realpath -s --relative-to="${OCD_HOME}" "$1")")
 }
 
 OCD_ASK() {
@@ -211,11 +211,10 @@ ocd-add() {
   OCD_FILE_SPLIT ${1} || return 1
 
   mkdir -p "${OCD_DIR}/${OCD_FILE_REL}"
-  ln -f "${OCD_HOME}/${OCD_FILE_REL}/${OCD_FILE_BASE}" "${OCD_DIR}/${OCD_FILE_REL}/${OCD_FILE_BASE}"
+  ln ${OCD_LN_OPTS} "${OCD_HOME}/${OCD_FILE_REL}/${OCD_FILE_BASE}" \
+      "${OCD_DIR}/${OCD_FILE_REL}/${OCD_FILE_BASE}"
 
-  pushd "${OCD_DIR}" >/dev/null
-  git add "./${OCD_FILE_REL}/${OCD_FILE_BASE}" && echo "Tracking: $1"
-  popd >/dev/null
+  git -C "${OCD_DIR}" add "${OCD_FILE_REL}/${OCD_FILE_BASE}" && echo "Tracking: $1"
 
   # If there are more arguments, call self.
   if [[ -n "$2" ]]; then
@@ -231,16 +230,12 @@ ocd-rm() {
 
   OCD_FILE_SPLIT ${1}
 
-  if [[ ! -f "${OCD_DIR}/${OCD_FILE_REL}/${OCD_FILE_BASE}" ]]; then
+  if [[ ! -f "${OCD_HOME}/${OCD_FILE_REL}/${OCD_FILE_BASE}" ]]; then
     OCD_ERR "$1 is not in ${OCD_DIR}."
     return 1
   fi
-  pushd "${OCD_DIR}/${OCD_FILE_REL}" >/dev/null
-  git rm -f "${OCD_FILE_BASE}" 1>/dev/null && echo "Untracking: $1" 
-  popd >/dev/null
 
-  # Clean directory if empty.
-  rm -d "${OCD_DIR}/${OCD_FILE_REL}" 2>/dev/null
+  git -C "${OCD_DIR}" rm -f "${OCD_FILE_REL}/${OCD_FILE_BASE}" && echo "Untracking: $1"
 
   # If there are more arguments, call self.
   if [[ -n "$2" ]]; then
