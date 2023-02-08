@@ -29,6 +29,8 @@ OCD_ASSUME_YES="${OCD_ASSUME_YES:-false}"  # Set to true for non-interactive/tes
 #OCD_LN_OPTS=""    # Leave options empty to create hard links.
 OCD_LN_OPTS="-sr"  # Create relative symbolic links.
 
+##########
+# Send a message to stderr.
 OCD_ERR()  { echo "$*" >&2; }
 
 # OCD needs git, or at least a package manager (apt or nix) to install it. We can also use this to
@@ -49,12 +51,10 @@ fi
 # helper function does some sanity checking to ensure we're only dealing with regular files, and
 # then splits the path and filename into useful chunks, storing them in these ugly globals.
 OCD_FILE_SPLIT() {
-
   if [[ ! -f "$1" ]]; then
     OCD_ERR "$1 is not a regular file."
     return 1
   fi
-
   OCD_FILE_BASE=$(basename "$1")
   OCD_FILE_REL=$(dirname "$(realpath -s --relative-to="${OCD_HOME}" "$1")")
 }
@@ -110,7 +110,6 @@ OCD_INSTALL_PKG() {
 ##########
 # Pull changes from git, and push them to  the user's homedirectory.
 ocd-restore() {
-
   if [[ ! -d "${OCD_DIR}" ]]; then
     OCD_ERR "${OCD_DIR}: doesn't exist!" && return
   fi
@@ -247,7 +246,7 @@ ocd-add() {
 }
 
 ##########
-# Stop tracking a file in the user's home directory. This will remove it to the git repo.
+# Stop tracking a file in the user's home directory. This will remove it from the git repo.
 ocd-rm() {
   if [[ -z "$1" ]];then
     echo "Usage: ocd-rm <filename>"
@@ -275,7 +274,6 @@ ocd-rm() {
 # Create a tar.gz archive with everything in ~/.ocd. This is useful for exporting your dotfiles to
 # another host where you don't want to run OCD.
 ocd-export() {
-
   if [[ -n "$1" ]]; then
     tar -C ${OCD_DIR} --exclude ${OCD_IGNORE_RE} -czvpf $1 .
   else
@@ -283,11 +281,11 @@ ocd-export() {
   fi
 }
 
-
+##########
 # Everything below runs when this file is sourced.
 
+##########
 # If OCD isn't already installed, guide the user through installation.
-
 if [[ ! -d "${OCD_DIR}/.git" ]]; then
   echo "OCD not installed! Running install script..."
 
@@ -312,7 +310,6 @@ if [[ ! -d "${OCD_DIR}/.git" ]]; then
   fi
 
   # Fetch the repository.
-
   if ! which git >/dev/null; then
     OCD_INSTALL_PKG git
   fi
