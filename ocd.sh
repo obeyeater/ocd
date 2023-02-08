@@ -169,17 +169,16 @@ ocd-restore() {
 ##########
 # Show status of local git repo, and optionally commit/push changes upstream.
 ocd-backup() {
-  pushd "${OCD_DIR}" >/dev/null
-  echo -e "git status in $(pwd):\n"
-  git status
-  if ! git status | grep -q "nothing to commit"; then
-    git diff
+  echo -e "git status in ${OCD_DIR}:\n"
+  git="git -C ${OCD_DIR}"
+  "${git}" "${OCD_DIR}" status
+  if ! "${git}" "${OCD_DIR}" status | grep -q "nothing to commit"; then
+    "${git}" diff
     if OCD_ASK "Commit everything and push to '${OCD_REPO}'?"; then
-      git commit -a
-      git push
+      "${git}" commit -a
+      "${git}" push
     fi
   fi
-  popd >/dev/null
 }
 
 ##########
@@ -199,9 +198,7 @@ ocd-status() {
 
   # If no args were passed, run `git status` instead.
 
-  pushd "${OCD_DIR}" >/dev/null
-  git status
-  popd >/dev/null
+  git -C "${OCD_DIR}" status
 }
 
 ##########
