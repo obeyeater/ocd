@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #shellcheck disable=SC1091,SC2086,SC2164
 
-# OCD: Obesssive Compulsive Directory
+# OCD: Optimally Configured Dotfiles
 # See https://github.com/nycksw/ocd for detailed information.
 #
 # To install, just source this file from bash.
