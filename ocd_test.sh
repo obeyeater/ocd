@@ -4,11 +4,13 @@
 # Unit tests for OCD <https://github.com/nycksw/ocd>.
 
 test_header() {
+  # Info header in green.
   echo -e "\n\e[1;32mRUNNING: ${FUNCNAME[1]}\n\e[0;0m"
 }
 
 test_fail() {
-  echo -e "\n\e[1;31mFAILED: ${FUNCNAME[1]}\n\e[0;0m"
+  # Errors in red.
+  echo -e "\n\e[1;31mFAILED: ${FUNCNAME[1]}\n\e[0;0m" > /dev/stderr
 }
 
 setup() {
