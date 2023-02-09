@@ -83,7 +83,7 @@ OCD_ASK() {
 }
 
 ##########
-# Install a package via sudo. (Debian-only) 
+# Install a package via sudo. (Debian-only)
 OCD_INSTALL_PKG() {
   if [[ -z "$1" ]]; then
     return 1
@@ -177,7 +177,7 @@ ocd-backup() {
   if ! ${OCD_GIT} status | grep -q "nothing to commit"; then
     ${OCD_GIT} diff
     if OCD_ASK "Commit everything and push to '${OCD_REPO}'?"; then
-      if [[ -n "${OCD_ASSUME_YES}" ]]; then msg="-m Non-interactive commit."; fi
+      if [[ "${OCD_ASSUME_YES}" == "true" ]]; then msg="-m Non-interactive commit."; fi
       ${OCD_GIT} commit -a "${msg}"
       ${OCD_GIT} push
     fi
