@@ -143,7 +143,7 @@ ocd-restore() {
   for file in ${files}; do
     dst="$(realpath -s ${OCD_HOME}/${file})"
     # Only restore file if it doesn't already exist, or if it has changed.
-    if [[ ! -f "${dst}" ]] || cmp "${file}" -> "${dst}"; then
+    if [[ ! -f "${dst}" ]] || ! cmp --silent "${file}" "${dst}"; then
       echo "  ${file} -> ${dst}"
       # If ~/.ocd.sh changed, warn the user that they should source it again.
       if [[ "${dst}" == "${OCD_HOME}/ocd.sh" ]]; then
@@ -170,13 +170,13 @@ ocd-restore() {
 # Show status of local git repo, and optionally commit/push changes upstream.
 ocd-backup() {
   echo -e "git status in ${OCD_DIR}:\n"
-  git="git -C ${OCD_DIR}"
-  "${git}" "${OCD_DIR}" status
-  if ! "${git}" "${OCD_DIR}" status | grep -q "nothing to commit"; then
-    "${git}" diff
+  git -C "${OCD_DIR}" status
+  if ! git -C "${OCD_DIR}" status | grep -q "nothing to commit"; then
+    git -C "${OCD_DIR}" diff
     if OCD_ASK "Commit everything and push to '${OCD_REPO}'?"; then
-      "${git}" commit -a
-      "${git}" push
+      if [[ -n "${OCD_ASSUME_YES}" ]]; then msg="-m Non-interactive commit."; fi
+      git -C "${OCD_DIR}" commit -a "${msg}"
+      git -C "${OCD_DIR}" push
     fi
   fi
 }
@@ -197,7 +197,6 @@ ocd-status() {
   fi
 
   # If no args were passed, run `git status` instead.
-
   git -C "${OCD_DIR}" status
 }
 
@@ -263,8 +262,6 @@ ocd-rm() {
   if [[ -n "$2" ]]; then
     ocd-rm "${@:2}"
   fi
-
-  return 0
 }
 
 ##########
@@ -311,7 +308,19 @@ if [[ ! -d "${OCD_DIR}/.git" ]]; then
     OCD_INSTALL_PKG git
   fi
 
-  if git clone "${OCD_REPO}" "${OCD_DIR}" ; then
+  if git clone "${OCD_REPO}" "${OCD_DIR}"; then
+    git_cmd="git -C ${OCD_DIR}"
+    if [[ -z "$($git_cmd branch -a)" ]]; then
+      # You can't push to a bare repo with no commits, because the main branch won't exist yet.
+      # So, we have to check for that and do an initial commit or else subsequent git commands will
+      # not work.
+      echo "Notice: ${OCD_REPO} looks like a bare repo with no commits;"
+      echo "  commiting and pushing README.md to create a main branch."
+      echo "https://github.com/nycksw/ocd" > "${OCD_DIR}"/README.md
+      $git_cmd add . 
+      $git_cmd commit -m "Initial commit."
+      $git_cmd push -u origin main
+    fi
     ocd-restore
     if [[ -f .bashrc ]]; then
       source .bashrc

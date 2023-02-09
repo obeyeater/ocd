@@ -2,16 +2,13 @@
 #shellcheck disable=SC1091,SC2086,SC2164
 #
 # Unit tests for OCD <https://github.com/nycksw/ocd>.
-#
-# TODO: Test 'ocd-backup' and 'ocd-status'.
-
 
 test_header() {
-  echo -e "\nRUNNING: ${FUNCNAME[1]}\n"
+  echo -e "\n\e[1;32mRUNNING: ${FUNCNAME[1]}\n\e[0;0m"
 }
 
 test_fail() {
-  echo -e "\nFAILED: ${FUNCNAME[1]}\n"
+  echo -e "\n\e[1;31mFAILED: ${FUNCNAME[1]}\n\e[0;0m"
 }
 
 setup() {
@@ -23,41 +20,60 @@ setup() {
 
   export OCD_ASSUME_YES="true"  # Non-interactive mode.
 
-  # Create test git repo.
-  touch "${OCD_REPO}"/{foo,bar,baz}
-  mkdir -p ${OCD_REPO}/a/b/c
-  touch "${OCD_REPO}"/a/b/c/qux
 
-  git init ${OCD_REPO}
-  git -C "${OCD_REPO}" add .
-  git -C "${OCD_REPO}" commit -a -m 'testing'
-
-  # Add an untracked file to the homedir.
-  touch "${OCD_HOME}/fred"
+  git init --bare "${OCD_REPO}"
 }
 
 test_install() {
   test_header
   . ocd.sh
+
+  # Create test files in git repo.
+  mkdir -p ${OCD_DIR}/a/b/c
+  touch "${OCD_DIR}"/{foo,bar,baz} "${OCD_DIR}"/a/b/c/qux
+  git -C "${OCD_DIR}" add .
+  git -C "${OCD_DIR}" commit -a -m "Files for testing."
+  git -C "${OCD_DIR}" push
+
+  # Pull the files we created above to the testing repo.
+  ocd-restore
 }
 
 test_file_tracking() {
-  # TODO: test multiple args
   test_header
 
-	# Add file from homedir to the repo.
-  ocd-add "${OCD_HOME}"/fred
+  # Add untracked files to the homedir.
+  touch "${OCD_HOME}/fred" "${OCD_HOME}/a/b/c/wilma"
+
+	# Add files from homedir to the repo.
+  ocd-add "${OCD_HOME}"/fred "${OCD_HOME}"/a/b/c/wilma
 	test -f "${OCD_DIR}"/fred || test_fail
+	test -f "${OCD_DIR}"/a/b/c/wilma || test_fail
  
 	# Stop tracking a file.
-  ocd-rm "${OCD_HOME}"/fred
+  ocd-rm "${OCD_HOME}"/fred "${OCD_HOME}"/a/b/c/wilma
 	test ! -f "${OCD_DIR}"/fred || test_fail
+	test ! -f "${OCD_DIR}"/a/b/c/wilma || test_fail
+  # Try with a file that was previously committed to the repo.
   ocd-rm "${OCD_HOME}"/a/b/c/qux
 	test ! -f "${OCD_DIR}"/a/b/c/qux || test_fail
 }
 
+test_status() {
+  test_header
+  echo "Testing status for untracked file..."
+  if [[ $(ocd-status "${OCD_HOME}"/fred) != "untracked" ]]; then test_fail; fi
+  echo "Testing status for tracked file..."
+  if [[ $(ocd-status "${OCD_HOME}"/bar) != "tracked" ]]; then test_fail; fi
+}
+
+test_backup() {
+  test_header
+
+  ocd-backup
+}
+
 test_export() {
-  # TODO: verify archive has expected contents.
   test_header
 
   ocd-export "${OCD_HOME}"/export.tar.gz
@@ -74,5 +90,7 @@ teardown() {
 setup
 test_install
 test_file_tracking
+test_status
+test_backup
 test_export
 teardown
