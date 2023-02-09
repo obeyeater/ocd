@@ -312,7 +312,7 @@ if [[ ! -d "${OCD_DIR}/.git" ]]; then
   fi
 
   if git clone "${OCD_REPO}" "${OCD_DIR}"; then
-    if [[ -z "$($git_cmd branch -a)" ]]; then
+    if [[ -z "$(${OCD_GIT} branch -a)" ]]; then
       # You can't push to a bare repo with no commits, because the main branch won't exist yet.
       # So, we have to check for that and do an initial commit or else subsequent git commands will
       # not work.
