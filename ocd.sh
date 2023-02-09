@@ -177,8 +177,11 @@ ocd-backup() {
   if ! ${OCD_GIT} status | grep -q "nothing to commit"; then
     ${OCD_GIT} diff
     if OCD_ASK "Commit everything and push to '${OCD_REPO}'?"; then
-      if [[ "${OCD_ASSUME_YES}" == "true" ]]; then msg="-m Non-interactive commit."; fi
-      ${OCD_GIT} commit -a "${msg}"
+      if [[ "${OCD_ASSUME_YES}" == "true" ]]; then
+        ${OCD_GIT} commit -a -m "Non-interactive commit."
+      else
+        ${OCD_GIT} commit -a
+      fi
       ${OCD_GIT} push
     fi
   fi
