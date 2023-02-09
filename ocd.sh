@@ -29,6 +29,9 @@ OCD_ASSUME_YES="${OCD_ASSUME_YES:-false}"  # Set to true for non-interactive/tes
 #OCD_LN_OPTS=""    # Leave options empty to create hard links.
 OCD_LN_OPTS="-sr"  # Create relative symbolic links.
 
+# For git commands that need OCD_DIR as the working directory.
+OCD_GIT="git -C ${OCD_DIR}"
+
 ##########
 # Send a message to stderr.
 OCD_ERR()  { echo "$*" >&2; }
@@ -115,7 +118,7 @@ ocd-restore() {
   fi
 
   echo "Running: git-pull:"
-  git -C "${OCD_DIR}" pull || {
+  ${OCD_GIT} pull || {
     OCD_ERR  "error: couldn't git-pull; check status in ${OCD_DIR}"
     return 1
   }
@@ -170,13 +173,13 @@ ocd-restore() {
 # Show status of local git repo, and optionally commit/push changes upstream.
 ocd-backup() {
   echo -e "git status in ${OCD_DIR}:\n"
-  git -C "${OCD_DIR}" status
-  if ! git -C "${OCD_DIR}" status | grep -q "nothing to commit"; then
-    git -C "${OCD_DIR}" diff
+  ${OCD_GIT} status
+  if ! ${OCD_GIT} status | grep -q "nothing to commit"; then
+    ${OCD_GIT} diff
     if OCD_ASK "Commit everything and push to '${OCD_REPO}'?"; then
       if [[ -n "${OCD_ASSUME_YES}" ]]; then msg="-m Non-interactive commit."; fi
-      git -C "${OCD_DIR}" commit -a "${msg}"
-      git -C "${OCD_DIR}" push
+      ${OCD_GIT} commit -a "${msg}"
+      ${OCD_GIT} push
     fi
   fi
 }
@@ -197,7 +200,7 @@ ocd-status() {
   fi
 
   # If no args were passed, run `git status` instead.
-  git -C "${OCD_DIR}" status
+  ${OCD_GIT} status
 }
 
 ##########
@@ -233,7 +236,7 @@ ocd-add() {
   ln ${OCD_LN_OPTS} "${OCD_HOME}/${OCD_FILE_REL}/${OCD_FILE_BASE}" \
       "${OCD_DIR}/${OCD_FILE_REL}/${OCD_FILE_BASE}"
 
-  git -C "${OCD_DIR}" add "${OCD_FILE_REL}/${OCD_FILE_BASE}" && echo "Tracking: $1"
+  ${OCD_GIT} add "${OCD_FILE_REL}/${OCD_FILE_BASE}" && echo "Tracking: $1"
 
   # If there are more arguments, call self.
   if [[ -n "$2" ]]; then
@@ -256,7 +259,7 @@ ocd-rm() {
     return 1
   fi
 
-  git -C "${OCD_DIR}" rm -f "${OCD_FILE_REL}/${OCD_FILE_BASE}" && echo "Untracking: $1"
+  ${OCD_GIT} rm -f "${OCD_FILE_REL}/${OCD_FILE_BASE}" && echo "Untracking: $1"
 
   # If there are more arguments, call self.
   if [[ -n "$2" ]]; then
@@ -309,7 +312,6 @@ if [[ ! -d "${OCD_DIR}/.git" ]]; then
   fi
 
   if git clone "${OCD_REPO}" "${OCD_DIR}"; then
-    git_cmd="git -C ${OCD_DIR}"
     if [[ -z "$($git_cmd branch -a)" ]]; then
       # You can't push to a bare repo with no commits, because the main branch won't exist yet.
       # So, we have to check for that and do an initial commit or else subsequent git commands will
@@ -317,9 +319,9 @@ if [[ ! -d "${OCD_DIR}/.git" ]]; then
       echo "Notice: ${OCD_REPO} looks like a bare repo with no commits;"
       echo "  commiting and pushing README.md to create a main branch."
       echo "https://github.com/nycksw/ocd" > "${OCD_DIR}"/README.md
-      $git_cmd add . 
-      $git_cmd commit -m "Initial commit."
-      $git_cmd push -u origin main
+      ${OCD_GIT} add . 
+      ${OCD_GIT} commit -m "Initial commit."
+      ${OCD_GIT} push -u origin main
     fi
     ocd-restore
     if [[ -f .bashrc ]]; then
