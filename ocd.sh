@@ -25,9 +25,9 @@ OCD_DIR="${OCD_DIR:-${HOME}/.ocd}"
 OCD_FAV_PKGS="${OCD_FAV_PKGS:-$OCD_HOME/.favpkgs}"
 OCD_ASSUME_YES="${OCD_ASSUME_YES:-false}"  # Set to true for non-interactive/testing.
 
-# Options for linking to files in the repo.
-#OCD_LN_OPTS=""    # Leave options empty to create hard links.
-OCD_LN_OPTS="-sr"  # Create relative symbolic links.
+# Use relative symbolic links from dotfiles in homedir pointing into '~/.ocd'. If this isn't
+# 'true', then hard links are created instead.
+OCD_SYMLINK="true"
 
 # For git commands that need OCD_DIR as the working directory.
 OCD_GIT="git -C ${OCD_DIR}"
@@ -155,7 +155,12 @@ ocd-restore() {
       if [[ -f "${dst}" ]]; then
         rm -f "${dst}"
       fi
-      ln ${OCD_LN_OPTS} "${OCD_DIR}/${file}" "${dst}"
+      # Link files from home directory to files in ~/.ocd repo.
+      if [[ "${OCD_SYMLINK}" == "true" ]]; then
+        ln -sr "${OCD_DIR}/${file}" "${dst}"
+      else
+        ln "${OCD_DIR}/${file}" "${dst}"
+      fi
     fi
   done
 
@@ -236,8 +241,17 @@ ocd-add() {
   OCD_FILE_SPLIT ${1} || return 1
 
   mkdir -p "${OCD_DIR}/${OCD_FILE_REL}"
-  ln ${OCD_LN_OPTS} "${OCD_HOME}/${OCD_FILE_REL}/${OCD_FILE_BASE}" \
-      "${OCD_DIR}/${OCD_FILE_REL}/${OCD_FILE_BASE}"
+
+  src="${OCD_HOME}/${OCD_FILE_REL}/${OCD_FILE_BASE}"
+  dst="${OCD_DIR}/${OCD_FILE_REL}/${OCD_FILE_BASE}"
+
+  # Link from home directory to file in ~/.ocd repo.
+  if [[ "${OCD_SYMLINK}" == "true" ]]; then
+    cp "${src}" "${dst}"
+    ln -fsr "${src}" "${dst}"
+  else
+    ln "${src}" "${dst}"
+  fi
 
   ${OCD_GIT} add "${OCD_FILE_REL}/${OCD_FILE_BASE}" && echo "Tracking: $1"
 
@@ -324,6 +338,7 @@ if [[ ! -d "${OCD_DIR}/.git" ]]; then
       echo "https://github.com/nycksw/ocd" > "${OCD_DIR}"/README.md
       ${OCD_GIT} add . 
       ${OCD_GIT} commit -m "Initial commit."
+      ${OCD_GIT} branch -M main
       ${OCD_GIT} push -u origin main
     fi
     ocd-restore
