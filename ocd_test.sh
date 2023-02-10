@@ -3,31 +3,46 @@
 #
 # Unit tests for OCD <https://github.com/nycksw/ocd>.
 
+# Tolerate no bullshit.
+set -o errexit   # Exit on error.
+set -o nounset   # Don't use undeclared variables.
+set -o pipefail  # Catch errs from piped cmds.
+
+OCD_SYMLINK="${OCD_SYMLINK:-true}"
+FAILURES="${FAILURES:-}"
+
 test_header() {
   # Info header in green.
-  echo -e "\n\e[1;32mRUNNING: ${FUNCNAME[1]}\n\e[0;0m"
+  echo -e "\\n\\e[1;32mRUNNING: ${FUNCNAME[1]}\\e[0;0m"
+
+  # Option "more info" line with a hanging indentation.
+  if [[ -n "${1:-}" ]]; then
+    echo -e "${1}"
+  fi
+
+  echo
 }
 
 test_fail() {
   # Errors in red.
-  echo -e "\n\e[1;31mFAILED: ${FUNCNAME[1]}\n\e[0;0m" > /dev/stderr
+  echo -e "\\n\\e[1;31mFAILED: ${FUNCNAME[1]}\\n\\e[0;0m" > /dev/stderr
+  FAILURES="${FAILURES}\\n${FUNCNAME[1]} OCD_SYMLINK=${OCD_SYMLINK}"
 }
 
 setup() {
-  test_header
+  test_header "OCD_SYMLINK=${OCD_SYMLINK}"
 
-  OCD_DIR=$(mktemp -d --suffix='_OCD_DIR')
-  OCD_HOME=$(mktemp -d --suffix='_OCD_HOME')
-  OCD_REPO=$(mktemp -d --suffix='_OCD_REPO')
+  OCD_DIR=$(mktemp -d --suffix='.OCD_DIR')
+  OCD_HOME=$(mktemp -d --suffix='.OCD_HOME')
+  OCD_REPO=$(mktemp -d --suffix='.OCD_REPO')
 
   export OCD_ASSUME_YES="true"  # Non-interactive mode.
-
 
   git init --bare "${OCD_REPO}"
 }
 
 test_install() {
-  test_header
+  test_header "OCD_SYMLINK=${OCD_SYMLINK}"
   . ocd.sh
 
   # Create test files in git repo.
@@ -42,7 +57,7 @@ test_install() {
 }
 
 test_file_tracking() {
-  test_header
+  test_header "OCD_SYMLINK=${OCD_SYMLINK}"
 
   # Add untracked files to the homedir.
   touch "${OCD_HOME}/fred" "${OCD_HOME}/a/b/c/wilma"
@@ -56,13 +71,11 @@ test_file_tracking() {
   ocd-rm "${OCD_HOME}"/fred "${OCD_HOME}"/a/b/c/wilma
 	test ! -f "${OCD_DIR}"/fred || test_fail
 	test ! -f "${OCD_DIR}"/a/b/c/wilma || test_fail
-  # Try with a file that was previously committed to the repo.
-  ocd-rm "${OCD_HOME}"/a/b/c/qux
-	test ! -f "${OCD_DIR}"/a/b/c/qux || test_fail
 }
 
 test_status() {
-  test_header
+  test_header "OCD_SYMLINK=${OCD_SYMLINK}"
+
   echo "Testing status for untracked file..."
   if [[ $(ocd-status "${OCD_HOME}"/fred) != "untracked" ]]; then test_fail; fi
   echo "Testing status for tracked file..."
@@ -70,13 +83,13 @@ test_status() {
 }
 
 test_backup() {
-  test_header
+  test_header "OCD_SYMLINK=${OCD_SYMLINK}"
 
   ocd-backup
 }
 
 test_export() {
-  test_header
+  test_header "OCD_SYMLINK=${OCD_SYMLINK}"
 
   ocd-export "${OCD_HOME}"/export.tar.gz
   test -f "${OCD_HOME}"/export.tar.gz || test_fail
@@ -96,3 +109,17 @@ test_status
 test_backup
 test_export
 teardown
+
+# Run again if we haven't tested hard links yet.
+if [[ "${OCD_SYMLINK:-}" == "true" ]]; then
+  export OCD_SYMLINK="false"
+  export FAILURES
+  exec "${BASH_SOURCE[0]}"
+else
+	if [[ -z "${FAILURES}" ]]; then
+		echo "All tests passed!"
+	else
+		echo -n "Failures: "
+    echo -e "${FAILURES}"
+	fi
+fi

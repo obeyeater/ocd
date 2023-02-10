@@ -157,7 +157,7 @@ ocd-restore() {
       fi
       # Link files from home directory to files in ~/.ocd repo.
       if [[ "${OCD_SYMLINK}" == "true" ]]; then
-        ln -sr "${dst}" "${OCD_DIR}/${file}"
+        ln -sr "${OCD_DIR}/${file}" "${dst}"
       else
         ln "${OCD_DIR}/${file}" "${dst}"
       fi
