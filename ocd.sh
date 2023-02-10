@@ -25,9 +25,9 @@ OCD_DIR="${OCD_DIR:-${HOME}/.ocd}"
 OCD_FAV_PKGS="${OCD_FAV_PKGS:-$OCD_HOME/.favpkgs}"
 OCD_ASSUME_YES="${OCD_ASSUME_YES:-false}"  # Set to true for non-interactive/testing.
 
-# Options for linking to files in the repo.
-#OCD_LN_OPTS=""    # Leave options empty to create hard links.
-OCD_LN_OPTS="-sr"  # Create relative symbolic links.
+# Set to "true" to use relative symbolic links from dotfiles in homedir pointing into '~/.ocd'. If
+# this isn't 'true', then hard links are created instead.
+OCD_SYMLINK="${OCD_SYMLINK:-true}"
 
 # For git commands that need OCD_DIR as the working directory.
 OCD_GIT="git -C ${OCD_DIR}"
@@ -155,7 +155,12 @@ ocd-restore() {
       if [[ -f "${dst}" ]]; then
         rm -f "${dst}"
       fi
-      ln ${OCD_LN_OPTS} "${OCD_DIR}/${file}" "${dst}"
+      # Link files from home directory to files in ~/.ocd repo.
+      if [[ "${OCD_SYMLINK}" == "true" ]]; then
+        ln -sr "${dst}" "${OCD_DIR}/${file}"
+      else
+        ln "${OCD_DIR}/${file}" "${dst}"
+      fi
     fi
   done
 
@@ -207,7 +212,7 @@ ocd-status() {
 }
 
 ##########
-# Display which of the user's favorite packages are not installed. (Debian-only) 
+# Display which of the user's favorite packages are not installed. (Debian-only)
 ocd-missing-pkgs() {
   [[ -f "$OCD_FAV_PKGS" ]] || touch "$OCD_FAV_PKGS"
 
@@ -236,13 +241,22 @@ ocd-add() {
   OCD_FILE_SPLIT ${1} || return 1
 
   mkdir -p "${OCD_DIR}/${OCD_FILE_REL}"
-  ln ${OCD_LN_OPTS} "${OCD_HOME}/${OCD_FILE_REL}/${OCD_FILE_BASE}" \
-      "${OCD_DIR}/${OCD_FILE_REL}/${OCD_FILE_BASE}"
+
+  home_file="${OCD_HOME}/${OCD_FILE_REL}/${OCD_FILE_BASE}"
+  ocd_file="${OCD_DIR}/${OCD_FILE_REL}/${OCD_FILE_BASE}"
+
+  # Link from home directory to file in ~/.ocd repo.
+  if [[ "${OCD_SYMLINK}" == "true" ]]; then
+    mv "${home_file}" "${ocd_file}"
+    ln -sr "${ocd_file}" "${home_file}"
+  else
+    ln "${ocd_file}" "${home_file}"
+  fi
 
   ${OCD_GIT} add "${OCD_FILE_REL}/${OCD_FILE_BASE}" && echo "Tracking: $1"
 
   # If there are more arguments, call self.
-  if [[ -n "$2" ]]; then
+  if [[ -n "${2:-}" ]]; then
     ocd-add "${@:2}"
   fi
 }
@@ -265,7 +279,7 @@ ocd-rm() {
   ${OCD_GIT} rm -f "${OCD_FILE_REL}/${OCD_FILE_BASE}" && echo "Untracking: $1"
 
   # If there are more arguments, call self.
-  if [[ -n "$2" ]]; then
+  if [[ -n "${2:-}" ]]; then
     ocd-rm "${@:2}"
   fi
 }
@@ -322,8 +336,9 @@ if [[ ! -d "${OCD_DIR}/.git" ]]; then
       echo "Notice: ${OCD_REPO} looks like a bare repo with no commits;"
       echo "  commiting and pushing README.md to create a main branch."
       echo "https://github.com/nycksw/ocd" > "${OCD_DIR}"/README.md
-      ${OCD_GIT} add . 
+      ${OCD_GIT} add .
       ${OCD_GIT} commit -m "Initial commit."
+      ${OCD_GIT} branch -M main
       ${OCD_GIT} push -u origin main
     fi
     ocd-restore
