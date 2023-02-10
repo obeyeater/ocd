@@ -71,10 +71,6 @@ test_file_tracking() {
   ocd-rm "${OCD_HOME}"/fred "${OCD_HOME}"/a/b/c/wilma
 	test ! -f "${OCD_DIR}"/fred || test_fail
 	test ! -f "${OCD_DIR}"/a/b/c/wilma || test_fail
-  # Try with a file that was previously committed to the repo.
-  #ocd-rm "${OCD_HOME}"/a/b/c/qux
-	#test ! -f "${OCD_DIR}"/a/b/c/qux || test_fail
-  #ocd-add "${OCD_HOME}"/a/b/c/qux
 }
 
 test_status() {
@@ -116,7 +112,6 @@ teardown
 
 # Run again if we haven't tested hard links yet.
 if [[ "${OCD_SYMLINK:-}" == "true" ]]; then
-  #exec env OCD_SYMLINK="false" ./"${BASH_SOURCE[0]}"
   export OCD_SYMLINK="false"
   export FAILURES
   exec "${BASH_SOURCE[0]}"
