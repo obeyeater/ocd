@@ -55,7 +55,7 @@ fi
 # then splits the path and filename into useful chunks, storing them in these ugly globals.
 OCD_FILE_SPLIT() {
   if [[ ! -f "$1" ]]; then
-    OCD_ERR "$1 is not a regular file."
+    OCD_ERR "$1 doesn't exist or is not a regular file."
     return 1
   fi
   OCD_FILE_BASE=$(basename "$1")
@@ -142,27 +142,30 @@ ocd-restore() {
   fi
 
   echo  "Restoring..."
+  pushd "${OCD_DIR}" 1>/dev/null
 
-  for file in ${files}; do
-    dst="$(realpath -s ${OCD_HOME}/${file})"
+  for existing_file in ${files}; do
+    new_file="$(realpath -s ${OCD_HOME}/${existing_file})"
     # Only restore file if it doesn't already exist, or if it has changed.
-    if [[ ! -f "${dst}" ]] || ! cmp --silent "${file}" "${dst}"; then
-      echo "  ${file} -> ${dst}"
+    if [[ ! -f "${new_file}" ]] || ! cmp --silent "${existing_file}" "${new_file}"; then
+      echo "  ${existing_file} -> ${new_file}"
       # If ~/.ocd.sh changed, warn the user that they should source it again.
-      if [[ "${dst}" == "${OCD_HOME}/ocd.sh" ]]; then
+      if [[ "${new_file}" == "${OCD_HOME}/ocd.sh" ]]; then
         echo "Notice: ocd.sh changed, source it to use new version: source ${OCD_HOME}/.ocd.sh"
       fi
-      if [[ -f "${dst}" ]]; then
-        rm -f "${dst}"
+      if [[ -f "${new_file}" ]]; then
+        rm -f "${new_file}"
       fi
       # Link files from home directory to files in ~/.ocd repo.
       if [[ "${OCD_SYMLINK}" == "true" ]]; then
-        ln -sr "${OCD_DIR}/${file}" "${dst}"
+        ln -sr "${OCD_DIR}/${existing_file}" "${new_file}"
       else
-        ln "${OCD_DIR}/${file}" "${dst}"
+        ln "${OCD_DIR}/${existing_file}" "${new_file}"
       fi
     fi
   done
+
+  popd 1>/dev/null
 
   # Some changes require cleanup that OCD won't handle; e.g., if you rename a file the old file
   # will remain. Housekeeping commands that need to be run may be put in ${OCD_DIR}/.ocd_cleanup;
@@ -250,7 +253,7 @@ ocd-add() {
     mv "${home_file}" "${ocd_file}"
     ln -sr "${ocd_file}" "${home_file}"
   else
-    ln "${ocd_file}" "${home_file}"
+    ln "${home_file}" "${ocd_file}"
   fi
 
   ${OCD_GIT} add "${OCD_FILE_REL}/${OCD_FILE_BASE}" && echo "Tracking: $1"
