@@ -256,7 +256,7 @@ ocd-add() {
     ln "${home_file}" "${ocd_file}"
   fi
 
-  ${OCD_GIT} add "${OCD_FILE_REL}/${OCD_FILE_BASE}" && echo "Tracking: $1"
+  ${OCD_GIT} add "${OCD_FILE_REL}/${OCD_FILE_BASE}"
 
   # If there are more arguments, call self.
   if [[ -n "${2:-}" ]]; then
@@ -279,7 +279,7 @@ ocd-rm() {
     return 1
   fi
 
-  ${OCD_GIT} rm -f "${OCD_FILE_REL}/${OCD_FILE_BASE}" && echo "Untracking: $1"
+  ${OCD_GIT} rm -f "${OCD_FILE_REL}/${OCD_FILE_BASE}"
 
   # If there are more arguments, call self.
   if [[ -n "${2:-}" ]]; then
