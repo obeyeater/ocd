@@ -9,7 +9,7 @@ set -o nounset   # Don't use undeclared variables.
 set -o pipefail  # Catch errs from piped cmds.
 
 OCD_SYMLINK="${OCD_SYMLINK:-true}"
-FAILURES="${FAILURES:-}"
+OCD_TEST_FAILURES="${OCD_TEST_FAILURES:-}"
 
 test_header() {
   # Info header in green.
@@ -26,7 +26,7 @@ test_header() {
 test_fail() {
   # Errors in red.
   echo -e "\\n\\e[1;31mFAILED: ${FUNCNAME[1]}\\n\\e[0;0m" > /dev/stderr
-  FAILURES="${FAILURES}\\n${FUNCNAME[1]} OCD_SYMLINK=${OCD_SYMLINK}"
+  OCD_TEST_FAILURES="${OCD_TEST_FAILURES}\\n${FUNCNAME[1]} OCD_SYMLINK=${OCD_SYMLINK}"
 }
 
 setup() {
@@ -113,13 +113,13 @@ teardown
 # Run again if we haven't tested hard links yet.
 if [[ "${OCD_SYMLINK:-}" == "true" ]]; then
   export OCD_SYMLINK="false"
-  export FAILURES
+  export OCD_TEST_FAILURES
   exec "${BASH_SOURCE[0]}"
 else
-	if [[ -z "${FAILURES}" ]]; then
+	if [[ -z "${OCD_TEST_FAILURES}" ]]; then
 		echo "All tests passed!"
 	else
 		echo -n "Failures: "
-    echo -e "${FAILURES}"
+    echo -e "${OCD_TEST_FAILURES}"
 	fi
 fi
