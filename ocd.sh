@@ -308,6 +308,9 @@ if [[ ! -d "${OCD_DIR}/.git" ]]; then
 
   echo "Using repository: ${OCD_REPO}"
   if ! OCD_ASK "Continue with this repo?"; then
+    if OCD_ASK "Continue without a repo?"; then
+      mkdir -p "${OCD_DIR}/.git"
+    fi
     return
   fi
 
