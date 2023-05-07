@@ -180,7 +180,7 @@ ocd-restore() {
 ##########
 # Show status of local git repo, and optionally commit/push changes upstream.
 ocd-backup() {
-  echo -e "git status in ${OCD_DIR}:\n"
+  echo -e "git status in ${OCD_DIR}:\\n"
   ${OCD_GIT} status
   if ! ${OCD_GIT} status | grep -q "nothing to commit"; then
     ${OCD_GIT} diff
@@ -327,7 +327,7 @@ if [[ ! -d "${OCD_DIR}/.git" ]]; then
   fi
 
   # Fetch the repository.
-  if ! which git >/dev/null; then
+  if ! command -v git >/dev/null; then
     OCD_INSTALL_PKG git
   fi
 
