@@ -292,7 +292,11 @@ ocd-rm() {
 # another host where you don't want to run OCD.
 ocd-export() {
   if [[ -n "$1" ]]; then
-    tar -C ${OCD_DIR} --exclude ${OCD_IGNORE_RE} -czvpf $1 .
+    OCD_TMP=$(mktemp -d)
+    rsync -av ${OCD_DIR}/ ${OCD_TMP}/
+    echo "# Exported from OCD on: $(date +%Y-%m-%d)" > ${OCD_TMP}/.ocd.sh
+    tar -C ${OCD_TMP} --exclude ${OCD_IGNORE_RE} -czvpf $1 .
+    rm -rf ${OCD_TMP}
   else
     OCD_ERR "Must supply a filename for the new tar archive."
   fi
