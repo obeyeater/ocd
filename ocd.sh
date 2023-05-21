@@ -23,6 +23,7 @@ OCD_REPO="${OCD_REPO:-git@github.com:nycksw/dotfiles.git}"
 OCD_HOME="${OCD_HOME:-$HOME}"
 OCD_DIR="${OCD_DIR:-${HOME}/.ocd}"
 OCD_FAV_PKGS="${OCD_FAV_PKGS:-$OCD_HOME/.favpkgs}"
+OCD_FORCE="${OCD_FORCE:-false}"
 OCD_ASSUME_YES="${OCD_ASSUME_YES:-false}"  # Set to true for non-interactive/testing.
 
 # Set to "true" to use relative symbolic links from dotfiles in homedir pointing into '~/.ocd'. If
@@ -147,7 +148,8 @@ ocd-restore() {
   for existing_file in ${files}; do
     new_file="$(realpath -s ${OCD_HOME}/${existing_file})"
     # Only restore file if it doesn't already exist, or if it has changed.
-    if [[ ! -f "${new_file}" ]] || ! cmp --silent "${existing_file}" "${new_file}"; then
+    if [[ ! -f "${new_file}" ]] || [[ "${OCD_FORCE}" == "true" ]] \
+        || ! cmp --silent "${existing_file}" "${new_file}"; then
       echo "  ${existing_file} -> ${new_file}"
       # If ~/.ocd.sh changed, warn the user that they should source it again.
       if [[ "${new_file}" == "${OCD_HOME}/ocd.sh" ]]; then
