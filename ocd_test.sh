@@ -8,7 +8,6 @@ set -o errexit   # Exit on error.
 set -o nounset   # Don't use undeclared variables.
 set -o pipefail  # Catch errs from piped cmds.
 
-OCD_SYMLINK="${OCD_SYMLINK:-true}"
 OCD_TEST_FAILURES="${OCD_TEST_FAILURES:-}"
 
 test_header() {
@@ -26,12 +25,10 @@ test_header() {
 test_fail() {
   # Errors in red.
   echo -e "\\n\\e[1;31mFAILED: ${FUNCNAME[1]}\\n\\e[0;0m" > /dev/stderr
-  OCD_TEST_FAILURES="${OCD_TEST_FAILURES}\\n${FUNCNAME[1]} OCD_SYMLINK=${OCD_SYMLINK}"
+  OCD_TEST_FAILURES="${OCD_TEST_FAILURES}\\n${FUNCNAME[1]}"
 }
 
 setup() {
-  test_header "OCD_SYMLINK=${OCD_SYMLINK}"
-
   OCD_DIR=$(mktemp -d --suffix='.OCD_DIR')
   OCD_HOME=$(mktemp -d --suffix='.OCD_HOME')
   OCD_REPO=$(mktemp -d --suffix='.OCD_REPO')
@@ -42,7 +39,6 @@ setup() {
 }
 
 test_install() {
-  test_header "OCD_SYMLINK=${OCD_SYMLINK}"
   . ocd.sh
 
   # Create test files in git repo.
@@ -57,8 +53,6 @@ test_install() {
 }
 
 test_file_tracking() {
-  test_header "OCD_SYMLINK=${OCD_SYMLINK}"
-
   # Add untracked files to the homedir.
   touch "${OCD_HOME}/fred" "${OCD_HOME}/a/b/c/wilma"
 
@@ -74,8 +68,6 @@ test_file_tracking() {
 }
 
 test_status() {
-  test_header "OCD_SYMLINK=${OCD_SYMLINK}"
-
   echo "Testing status for untracked file..."
   if [[ $(ocd-status "${OCD_HOME}"/fred) != "untracked" ]]; then test_fail; fi
   echo "Testing status for tracked file..."
@@ -83,14 +75,10 @@ test_status() {
 }
 
 test_backup() {
-  test_header "OCD_SYMLINK=${OCD_SYMLINK}"
-
   ocd-backup
 }
 
 test_export() {
-  test_header "OCD_SYMLINK=${OCD_SYMLINK}"
-
   ocd-export "${OCD_HOME}"/export.tar.gz
   test -f "${OCD_HOME}"/export.tar.gz || test_fail
 }
@@ -110,16 +98,9 @@ test_backup
 test_export
 teardown
 
-# Run again if we haven't tested hard links yet.
-if [[ "${OCD_SYMLINK:-}" == "true" ]]; then
-  export OCD_SYMLINK="false"
-  export OCD_TEST_FAILURES
-  exec "${BASH_SOURCE[0]}"
+if [[ -z "${OCD_TEST_FAILURES}" ]]; then
+  echo "All tests passed!"
 else
-	if [[ -z "${OCD_TEST_FAILURES}" ]]; then
-		echo "All tests passed!"
-	else
-		echo -n "Failures: "
-    echo -e "${OCD_TEST_FAILURES}"
-	fi
+  echo -n "Failures: "
+  echo -e "${OCD_TEST_FAILURES}"
 fi

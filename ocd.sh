@@ -6,14 +6,6 @@
 #
 # To install, just source this file from bash.
 #
-# Functions and usage:
-#   ocd-add FILE:       track a new file in the repository
-#   ocd-rm FILE:        stop tracking a file in the repository
-#   ocd-restore:        pull from git master and copy files to homedir
-#   ocd-backup:         push all local changes to master
-#   ocd-status [FILE]:  check if a file is tracked, or if there are uncommited changes
-#   ocd-export FILE:    create a tar.gz archive with everything in '~/.ocd'.
-#   ocd-missing-pkgs:   compare system against ${OCD_HOME}/.favpkgs, report missing
 
 # Pattern for files to ignore when doing anything with OCD (find, tar, etc.)
 OCD_IGNORE_RE="./.git"
@@ -26,23 +18,29 @@ OCD_FAV_PKGS="${OCD_FAV_PKGS:-$OCD_HOME/.favpkgs}"
 OCD_FORCE="${OCD_FORCE:-false}"
 OCD_ASSUME_YES="${OCD_ASSUME_YES:-false}"  # Set to true for non-interactive/testing.
 
-# Set to "true" to use relative symbolic links from dotfiles in homedir pointing into '~/.ocd'. If
-# this isn't 'true', then hard links are created instead.
-OCD_SYMLINK="${OCD_SYMLINK:-true}"
-
 # For git commands that need OCD_DIR as the working directory.
 OCD_GIT="git -C ${OCD_DIR}"
+
+USAGE=$(cat << EOF
+
+Usage:
+  ocd install:        install files from ${OCD_REPO}
+  ocd add FILE:       track a new file in the repository
+  ocd rm FILE:        stop tracking a file in the repository
+  ocd restore:        pull from git master and copy files to homedir
+  ocd backup:         push all local changes to master
+  ocd status [FILE]:  check if a file is tracked, or if there are uncommited changes
+  ocd export FILE:    create a tar.gz archive with everything in ${OCD_DIR}
+  ocd missing-pkgs:   compare system against ${OCD_FAV_PKGS} and report missing
+EOF
+)
 
 ##########
 # Send a message to stderr.
 OCD_ERR()  { echo "$*" >&2; }
 
-# OCD needs git, or at least a package manager (apt or nix) to install it. We can also use this to
-# install packages via ocd-missing-pkgs based on user preferences.
 if command -v dpkg >/dev/null; then
   OCD_PKG_MGR="dpkg"
-elif command -v nix-env >/dev/null; then
-  OCD_PKG_MGR="nix"
 else
   if ! command -v git >/dev/null; then
     OCD_ERR "Couldn't find git or install it."
@@ -55,12 +53,12 @@ fi
 # helper function does some sanity checking to ensure we're only dealing with regular files, and
 # then splits the path and filename into useful chunks, storing them in these ugly globals.
 OCD_FILE_SPLIT() {
-  if [[ ! -f "$1" ]]; then
-    OCD_ERR "$1 doesn't exist or is not a regular file."
+  if [[ ! -f "${1-}" ]]; then
+    OCD_ERR "${1-} doesn't exist or is not a regular file."
     return 1
   fi
-  OCD_FILE_BASE=$(basename "$1")
-  OCD_FILE_REL=$(dirname "$(realpath -s --relative-to="${OCD_HOME}" "$1")")
+  OCD_FILE_BASE=$(basename "${1-}")
+  OCD_FILE_REL=$(dirname "$(realpath -s --relative-to="${OCD_HOME}" "${1-}")")
 }
 
 ##########
@@ -86,16 +84,14 @@ OCD_ASK() {
 ##########
 # Install a package via sudo. (Debian-only)
 OCD_INSTALL_PKG() {
-  if [[ -z "$1" ]]; then
+  if [[ -z "${1-}" ]]; then
     return 1
   fi
 
   echo "Installing ${1}..."
 
   if [[ "${OCD_PKG_MGR}" == "dpkg" ]]; then
-    sudo apt-get install -y "$1"
-  elif [[ "${OCD_PKG_MGR}" == "nix" ]]; then
-    nix-env -i "$1"
+    sudo apt-get install -y "${1}"
   else
     OCD_ERR "Couldn't detect a suitable package manager."
     return 1
@@ -159,11 +155,7 @@ ocd-restore() {
         rm -f "${new_file}"
       fi
       # Link files from home directory to files in ~/.ocd repo.
-      if [[ "${OCD_SYMLINK}" == "true" ]]; then
-        ln -sr "${OCD_DIR}/${existing_file}" "${new_file}"
-      else
-        ln "${OCD_DIR}/${existing_file}" "${new_file}"
-      fi
+      ln -sr "${OCD_DIR}/${existing_file}" "${new_file}"
     fi
   done
 
@@ -201,7 +193,7 @@ ocd-backup() {
 # Show tracking/modified status for a file, or the whole repo.
 ocd-status() {
   # If an arg is passed, assume it's a file and report on whether it's tracked.
-  if [[ -n "$1" ]]; then
+  if [[ -n "${1-}" ]]; then
     OCD_FILE_SPLIT ${1}
 
     if [[ -f "${OCD_DIR}/${OCD_FILE_REL}/${OCD_FILE_BASE}" ]]; then
@@ -225,10 +217,6 @@ ocd-missing-pkgs() {
     dpkg --get-selections | grep '\sinstall$' | awk '{print $1}' | sort \
         | comm -13 - <(grep -Ev '(^-|^ *#)' "$OCD_FAV_PKGS" \
         | sed 's/ *#.*$//' |sort)
-  elif [[ "${OCD_PKG_MGR}" == "nix" ]]; then
-    # TODO:implement missing pkg check for NixOS
-    OCD_ERR "Notice: Checking .favpkgs not yet implemented on NixOS."
-
   else
     OCD_ERR "Couldn't detect which distribution we're using."
     return 1
@@ -238,8 +226,8 @@ ocd-missing-pkgs() {
 ##########
 # Start tracking a file in the user's home directory. This will add it to the git repo.
 ocd-add() {
-  if [[ -z "$1" ]];then
-    ocd:err "Usage: ocd-add <filename>"
+  if [[ -z "${1-}" ]]; then
+    OCD_ERR "Usage: ocd-add <filename>"
     return 1
   fi
 
@@ -251,12 +239,8 @@ ocd-add() {
   ocd_file="${OCD_DIR}/${OCD_FILE_REL}/${OCD_FILE_BASE}"
 
   # Link from home directory to file in ~/.ocd repo.
-  if [[ "${OCD_SYMLINK}" == "true" ]]; then
-    mv "${home_file}" "${ocd_file}"
-    ln -sr "${ocd_file}" "${home_file}"
-  else
-    ln "${home_file}" "${ocd_file}"
-  fi
+  mv "${home_file}" "${ocd_file}"
+  ln -sr "${ocd_file}" "${home_file}"
 
   ${OCD_GIT} add "${OCD_FILE_REL}/${OCD_FILE_BASE}"
 
@@ -309,74 +293,125 @@ ocd-export() {
 
 ##########
 # If OCD isn't already installed, guide the user through installation.
-if [[ ! -d "${OCD_DIR}/.git" ]]; then
-  echo "OCD not installed! Running install script..."
+ocd-install() {
+  if [[ ! -d "${OCD_DIR}/.git" ]]; then
+    echo "OCD not installed! Running install script..."
 
-  echo "Using repository: ${OCD_REPO}"
-  if ! OCD_ASK "Continue with this repo?"; then
-    if OCD_ASK "Continue without a repo?"; then
-      mkdir -p "${OCD_DIR}/.git"
+    echo "Using repository: ${OCD_REPO}"
+    if ! OCD_ASK "Continue with this repo?"; then
+      if OCD_ASK "Continue without a repo?"; then
+        mkdir -p "${OCD_DIR}/.git"
+      fi
+      return
     fi
-    return
-  fi
 
-  # Check if we need SSH auth for getting the repo.
-  if [[ "${OCD_REPO}" == *"@"* ]]; then
+    # Check if we need SSH auth for getting the repo.
+    if [[ "${OCD_REPO}" == *"@"* ]]; then
 
-    # Check if an ssh-agent is active with identities in memory.
-    get_idents() { ssh-add -l 2>/dev/null; }
+      # Check if an ssh-agent is active with identities in memory.
+      get_idents() { ssh-add -l 2>/dev/null; }
 
-    if [[ -z "$(get_idents)" ]]; then
-      if ! OCD_ASK "No SSH identities are available for \"${OCD_REPO}\". Continue anyway?"
-      then
-        OCD_ERR "Quitting due to missing SSH identities."
-        return 1
+      if [[ -z "$(get_idents)" ]]; then
+        if ! OCD_ASK "No SSH identities are available for \"${OCD_REPO}\". Continue anyway?"
+        then
+          OCD_ERR "Quitting due to missing SSH identities."
+          return 1
+        fi
       fi
     fi
-  fi
 
-  # Fetch the repository.
-  if ! command -v git >/dev/null; then
-    OCD_INSTALL_PKG git
-  fi
-
-  if git clone "${OCD_REPO}" "${OCD_DIR}"; then
-    if [[ -z "$(${OCD_GIT} branch -a)" ]]; then
-      # You can't push to a bare repo with no commits, because the main branch won't exist yet.
-      # So, we have to check for that and do an initial commit or else subsequent git commands will
-      # not work.
-      echo "Notice: ${OCD_REPO} looks like a bare repo with no commits;"
-      echo "  commiting and pushing README.md to create a main branch."
-      echo "https://github.com/nycksw/ocd" > "${OCD_DIR}"/README.md
-      ${OCD_GIT} add .
-      ${OCD_GIT} commit -m "Initial commit."
-      ${OCD_GIT} branch -M main
-      ${OCD_GIT} push -u origin main
+    # Fetch the repository.
+    if ! command -v git >/dev/null; then
+      OCD_INSTALL_PKG git
     fi
-    ocd-restore
-    if [[ -f .bashrc ]]; then
-      source .bashrc
+
+    if git clone "${OCD_REPO}" "${OCD_DIR}"; then
+      if [[ -z "$(${OCD_GIT} branch -a)" ]]; then
+        # You can't push to a bare repo with no commits, because the main branch won't exist yet.
+        # So, we have to check for that and do an initial commit or else subsequent git commands will
+        # not work.
+        echo "Notice: ${OCD_REPO} looks like a bare repo with no commits;"
+        echo "  commiting and pushing README.md to create a main branch."
+        echo "https://github.com/nycksw/ocd" > "${OCD_DIR}"/README.md
+        ${OCD_GIT} add .
+        ${OCD_GIT} commit -m "Initial commit."
+        ${OCD_GIT} branch -M main
+        ${OCD_GIT} push -u origin main
+      fi
+      ocd-restore
+      if [[ -f .bashrc ]]; then
+        source .bashrc
+      fi
+    else
+      OCD_ERR "Couldn't clone repository: ${OCD_REPO}"
+      return 1
     fi
-  else
-    OCD_ERR "Couldn't clone repository: ${OCD_REPO}"
-    return 1
-  fi
 
-  if [[ -n "$(ocd-missing-pkgs)" ]]; then
-    if OCD_ASK "Install missing pkgs? ($(ocd-missing-pkgs|xargs))"; then
-      OCD_INSTALL_PKG "$(ocd-missing-pkgs)"
+    if [[ -n "$(ocd-missing-pkgs)" ]]; then
+      if OCD_ASK "Install missing pkgs? ($(ocd-missing-pkgs|xargs))"; then
+        OCD_INSTALL_PKG "$(ocd-missing-pkgs)"
+      fi
     fi
-  fi
 
-  # Add this script to the repo if it's not already there.
-  if [[ ! -f "${OCD_DIR}/.ocd.sh" ]]; then
-    echo "Adding this script to ${OCD_HOME}/.ocd.sh and tracking in repo."
-    cp "${BASH_SOURCE[0]}" "${OCD_HOME}/.ocd.sh"
-    ocd-add "${OCD_HOME}/.ocd.sh"
-  fi
+    # Add this script to the repo if it's not already there.
+    if [[ ! -f "${OCD_DIR}/.ocd.sh" ]]; then
+      echo "Adding this script to ${OCD_HOME}/.ocd.sh and tracking in repo."
+      cp "${BASH_SOURCE[0]}" "${OCD_HOME}/.ocd.sh"
+      ocd-add "${OCD_HOME}/.ocd.sh"
+    fi
 
-  echo "DON'T FORGET to source ${OCD_HOME}/.ocd.sh via .bash_profile or something similar."
-  echo "...something like: test -f ~/.ocd.sh && source ~/.ocd.sh"
-fi
+    echo "DON'T FORGET to source ${OCD_HOME}/.ocd.sh via .bash_profile or something similar."
+    echo "...something like: test -f ~/.ocd.sh && source ~/.ocd.sh"
+  fi
+}
+ocd-install
 
 alias ocd="pushd \${OCD_HOME}/.ocd"
+
+main() {
+  case "${1-}" in
+    install)
+      ocd-install
+      ;;
+    add)
+      shift 1 && ocd-add $@
+      ;;
+    rm)
+      shift 1 && ocd-rm $@
+      ;;
+    restore)
+      ocd-restore
+      ;;
+    backup)
+      ocd-backup
+      ;;
+    status)
+      shift 1 && ocd-status $@
+      ;;
+    export)
+      shift 1 && ocd-export $@
+      ;;
+    missing-pkgs)
+      ocd-missing-pkgs
+      ;;
+    *)
+      echo "${USAGE}"
+      ;;
+  esac
+}
+
+# Execute main function if script wasn't sourced.
+if [[ "$0" = "${BASH_SOURCE[0]}" ]]; then
+
+  # Vars for current file & dir.
+  _dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  _file="${_dir}/$(basename "${BASH_SOURCE[0]}")"
+  _base="$(basename ${_file})"
+  _root="$(cd "$(dirname "${_dir}")" && pwd)"
+
+  set -o errexit   # Exit on error.
+  set -o nounset   # Don't use undeclared variables.
+  set -o pipefail  # Catch errs from piped cmds.
+
+  main "$@"
+fi
