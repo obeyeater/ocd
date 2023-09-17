@@ -4,7 +4,7 @@ Do you have dotfiles skewed across lots of different machines? This script allow
 you to easily track and synchronize them using Git as a backend. It makes
 setting up a new system very fast and simple.
 
-Move into a new shell with just two or three commands, like so:
+Move into a new shell like so:
 
 ```
     curl https://raw.githubusercontent.com/nycksw/ocd/master/ocd.sh -o ~/bin/ocd
