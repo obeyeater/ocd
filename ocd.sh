@@ -34,8 +34,7 @@ EOF
 )
 
 # Use shlib for common functions. <https://github.com/nycksw/shlib>
-. "$(command -v shlib 2>/dev/null)" || \
-    ( echo "no shlib available; exiting." >&2 && exit 1 )
+. "$(command -v shlib)"
 
 # stdio
 _err() { shlib::warn "$@"; }
