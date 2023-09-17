@@ -13,12 +13,6 @@ OCD_TEST_FAILURES="${OCD_TEST_FAILURES:-}"
 test_header() {
   # Info header in green.
   echo -e "\\n\\e[1;32mRUNNING: ${FUNCNAME[1]}\\e[0;0m"
-
-  # Option "more info" line with a hanging indentation.
-  if [[ -n "${1:-}" ]]; then
-    echo -e "${1}"
-  fi
-
   echo
 }
 
@@ -32,6 +26,7 @@ setup() {
   OCD_DIR=$(mktemp -d --suffix='.OCD_DIR')
   OCD_HOME=$(mktemp -d --suffix='.OCD_HOME')
   OCD_REPO=$(mktemp -d --suffix='.OCD_REPO')
+  export OCD_DIR OCD_HOME OCD_REPO
 
   export OCD_ASSUME_YES="true"  # Non-interactive mode.
 
@@ -39,7 +34,7 @@ setup() {
 }
 
 test_install() {
-  . ocd.sh
+  ./ocd.sh install
 
   # Create test files in git repo.
   mkdir -p ${OCD_DIR}/a/b/c
@@ -49,37 +44,39 @@ test_install() {
   git -C "${OCD_DIR}" push
 
   # Pull the files we created above to the testing repo.
-  ocd-restore
+  ./ocd.sh restore
 }
 
 test_file_tracking() {
+  test_header
   # Add untracked files to the homedir.
   touch "${OCD_HOME}/fred" "${OCD_HOME}/a/b/c/wilma"
 
 	# Add files from homedir to the repo.
-  ocd-add "${OCD_HOME}"/fred "${OCD_HOME}"/a/b/c/wilma
+  ./ocd.sh add "${OCD_HOME}"/fred "${OCD_HOME}"/a/b/c/wilma
 	test -f "${OCD_DIR}"/fred || test_fail
 	test -f "${OCD_DIR}"/a/b/c/wilma || test_fail
  
 	# Stop tracking a file.
-  ocd-rm "${OCD_HOME}"/fred "${OCD_HOME}"/a/b/c/wilma
+  ./ocd.sh rm "${OCD_HOME}"/fred "${OCD_HOME}"/a/b/c/wilma
 	test ! -f "${OCD_DIR}"/fred || test_fail
 	test ! -f "${OCD_DIR}"/a/b/c/wilma || test_fail
 }
 
 test_status() {
   echo "Testing status for untracked file..."
-  if [[ $(ocd-status "${OCD_HOME}"/fred) != "untracked" ]]; then test_fail; fi
+  ./ocd.sh status "${OCD_HOME}"/fred
+  if ./ocd.sh status "${OCD_HOME}"/fred | grep -q "is tracked"; then test_fail; fi
   echo "Testing status for tracked file..."
-  if [[ $(ocd-status "${OCD_HOME}"/bar) != "tracked" ]]; then test_fail; fi
+  if ./ocd.sh status "${OCD_HOME}"/bar | grep -q "not tracked"; then test_fail; fi
 }
 
 test_backup() {
-  ocd-backup
+  ./ocd.sh backup
 }
 
 test_export() {
-  ocd-export "${OCD_HOME}"/export.tar.gz
+  ./ocd.sh export "${OCD_HOME}"/export.tar.gz
   test -f "${OCD_HOME}"/export.tar.gz || test_fail
 }
 
