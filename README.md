@@ -7,14 +7,14 @@ setting up a new system very fast and simple.
 Move into a new shell with just two or three commands, like so:
 
 ```
-    curl https://raw.githubusercontent.com/nycksw/ocd/master/ocd.sh -o ~/.ocd.sh
-    vim ~/.ocd.sh  # Change OCD_REPO to your own repository.
-    source ~/.ocd.sh
+    curl https://raw.githubusercontent.com/nycksw/ocd/master/ocd.sh -o ~/bin/ocd
+    vim ~/bin/ocd  # Change OCD_REPO to your own repository.
+    ocd install
 ```
 
 See "Installation and usage" (below) for more information on how to set up your own repository.
 
-The first time you source the `ocd.sh` script it does the following:
+When you run `ocd install` it does the following:
 
   * Checks if your SSH identity is available (this is necessary to clone a RW git repository).
   * Installs `git(1)` if it's not already installed
@@ -30,13 +30,13 @@ The first time you source the `ocd.sh` script it does the following:
   * `curl https://raw.githubusercontent.com/nycksw/ocd/master/ocd.sh -o ~/.ocd.sh`
   * `vim ~/.ocd.sh` and change `OCD_REPO` to point to your own repository.
   * `source ~/.ocd.sh` to install the system and create all the links.
-  * Add all the additional dotfiles you want to track by doing `ocd-add <filename>`
+  * Add all the additional dotfiles you want to track by doing `ocd add <filename>`
   * Make sure `.bashrc` includes something like `source $HOME/.ocd.sh`.
-  * Use `ocd-backup` to push your changes to the repo.
-  * Use `ocd-restore` to sync everything from your repository to your home directory.
+  * Use `ocd backup` to push your changes to the repo.
+  * Use `ocd restore` to sync everything from your repository to your home directory.
   * Optional: create a `~/.favpkgs` file containing packages you routinely install on a new system.
-    * `ocd-missing-pkgs` will use this to show you which packages are currently missing.
-    * Then you can do something like this: `sudo apt-get install $(ocd-missing-pkgs)`
+    * `ocd missing-pkgs` will use this to show you which packages are currently missing.
+    * Then you can do something like this: `sudo apt-get install $(ocd missing-pkgs)`
 
 # Writing portable config files
 
@@ -54,25 +54,25 @@ This way, settings are only applied in the appropriate context.
 # Managing changes to tracked files
 
 When I log in to a system that I haven't worked on in a while, the first thing
-I do is run `ocd-restore`. Any time I make a config change, I run `ocd-backup`.
+I do is run `ocd restore`. Any time I make a config change, I run `ocd backup`.
 
 *Note*: the actual dotfiles are linked to their counterparts in the
 local `~/.ocd` git branch, so there's no need to copy changes anywhere before
-committing. Just edit in place and run `ocd-backup`.
+committing. Just edit in place and run `ocd backup`.
 
-There are also helper functions: `ocd-status` tells me if I'm behind the
-master, and `ocd-missing-pkgs` tells me if my installed
+There are also helper functions: `ocd status` tells me if I'm behind the
+master, and `ocd missing-pkgs` tells me if my installed
 packages differ from my basic preferences recorded in `~/.favpkgs` (for
 example, your `openbox` autostart may call programs that are not installed
-by default on a new system; `ocd-missing-pkgs` is just a very simple way
+by default on a new system; `ocd missing-pkgs` is just a very simple way
 to record these dependencies and make it easy to install them, e.g.: `sudo
-apt-get install $(ocd-missing-pkgs)`)
+apt-get install $(ocd missing-pkgs)`)
 
 Adding new files is just:
-  * `ocd-add <filename>`
-  * `ocd-backup`
+  * `ocd add <filename>`
+  * `ocd backup`
 
-Finally, you may also use `ocd-export filename.tar.gz` to create an archive
+Finally, you may also use `ocd export filename.tar.gz` to create an archive
 with all your files. This is useful if you'd like to copy your files to
 another host where you don't want to use OCD.
 
@@ -82,7 +82,7 @@ If I change something on any of my systems, I can easily push the change
 back to my master git repository. For example:
 
 ```
-  $ ocd-backup
+  $ ocd backup
 
   On branch master
   Your branch is up-to-date with 'origin/master'.
@@ -113,7 +113,7 @@ back to my master git repository. For example:
 ### Caveats
 
 *Merging git conflicts*: Occasionally I'll change something on more than one system without
-running `ocd-backup`, and git will complain that it can't run `git pull` without
+running `ocd backup`, and git will complain that it can't run `git pull` without
 first committing local changes. This is easy to fix by `cd`ing to `~/.ocd`
 and doing a typical merge, a simple `git push`, a `git checkout -f $filename`
 to overwrite changes, or some other resolution.
