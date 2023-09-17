@@ -8,6 +8,8 @@ Move into a new shell with just two or three commands, like so:
 
 ```
     curl https://raw.githubusercontent.com/nycksw/ocd/master/ocd.sh -o ~/bin/ocd
+    curl https://raw.githubusercontent.com/nycksw/shlib/main/shlib -o ~/bin/shlib
+    chmod +x ~/bin/{ocd,shlib}
     vim ~/bin/ocd  # Change OCD_REPO to your own repository.
     ocd install
 ```
@@ -27,11 +29,11 @@ When you run `ocd install` it does the following:
     * If you're not forwarding the appropriate SSH identity for the repo you'll be using, you'll 
       still need to set that up manually, either via forwarding or by manually copying your key to the
       host and running an ssh-agent locally.
-  * `curl https://raw.githubusercontent.com/nycksw/ocd/master/ocd.sh -o ~/.ocd.sh`
-  * `vim ~/.ocd.sh` and change `OCD_REPO` to point to your own repository.
-  * `source ~/.ocd.sh` to install the system and create all the links.
+  * `curl https://raw.githubusercontent.com/nycksw/ocd/master/ocd.sh -o ~/bin/ocd`
+  * `curl https://raw.githubusercontent.com/nycksw/shlib/main/shlib -o ~/bin/shlib`
+  * `vim ~/bin/ocd` and change `OCD_REPO` to point to your own repository.
+  * `ocd install` to install the system and create all the links.
   * Add all the additional dotfiles you want to track by doing `ocd add <filename>`
-  * Make sure `.bashrc` includes something like `source $HOME/.ocd.sh`.
   * Use `ocd backup` to push your changes to the repo.
   * Use `ocd restore` to sync everything from your repository to your home directory.
   * Optional: create a `~/.favpkgs` file containing packages you routinely install on a new system.
