@@ -6,14 +6,9 @@
 #
 # To install: /path/to/ocd install
 
-# Use shlib for common functions. <https://github.com/nycksw/shlib>
-. "$(command -v shlib)"
-
-# Env vars may be set separately in this file.
+# Env vars may be set separately in "~/.ocd.conf".
 OCD_CONF="${OCD_CONF:-${HOME}/.ocd.conf}"
-if [[ -f "${OCD_CONF}" ]]; then
-  source "${OCD_CONF}"
-fi
+if [[ -f "${OCD_CONF}" ]]; then source "${OCD_CONF}"; fi
 
 # These defaults may be overridden via the environment; see unit tests for examples.
 OCD_REPO="${OCD_REPO:-git@github.com:username/your-dotfiles.git}"
@@ -30,11 +25,11 @@ OCD_IGNORE_RE="./.git"
 OCD_GIT="git -C ${OCD_DIR}"
 
 # Pretty stdio/stderr helpers.
-_err() { shlib::warn "$@"; }
-_info() { shlib::info "$@"; }
+_err() { echo -e "\e[1;31m\u2717\e[0;0m ${*}\n"; }
+_info() { echo  -e "\e[1;32m\u2713\e[0;0m ${*}\n"; }
 
 # Optional SSH identity for the git repository.
-if [[ ! -z "${OCD_IDENT-}" ]]; then
+if [[ -n "${OCD_IDENT-}" ]]; then
   if [[ ! -f "${OCD_IDENT}" ]]; then
     _err "Couldn't find SSH identity from ${OCD_CONF}: ${OCD_IDENT}"
     exit 1
@@ -73,7 +68,21 @@ ocd_ask() {
   if [[ "${OCD_ASSUME_YES}" == "true" ]]; then
     return
   fi
-  shlib::yesno "${@}"
+  prompt="${*} [NO/yes]: "
+  echo -ne "${prompt}"
+  while true; do
+    local answer
+    read -r answer
+    if [[ -z "${answer}" ]]; then
+        return 1  # Empty response defaults to "no".
+    elif [[ "${answer,,}" == "yes" || "${answer,,}" == "y" ]];then
+      return 0
+    elif [[ "${answer,,}" == "no" || "${answer,,}" == "n" ]];then
+      return 1
+    else
+      echo -ne "${prompt}"
+    fi
+  done
 }
 
 ##########
@@ -194,7 +203,7 @@ ocd_status() {
 ocd_missing_pkgs() {
   [[ -f "$OCD_FAV_PKGS" ]] || touch "$OCD_FAV_PKGS"
 
-  if [[ "${OCD_PKG_MGR}" == "dpkg" ]]; then
+  if command -v dpkg 1>/dev/null; then
     dpkg --get-selections | grep '\sinstall$' | awk '{print $1}' | sort \
         | comm -13 - <(grep -Ev '(^-|^ *#)' "$OCD_FAV_PKGS" \
         | sed 's/ *#.*$//' |sort)
