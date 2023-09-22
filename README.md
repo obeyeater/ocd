@@ -8,13 +8,27 @@ Move into a new shell like so:
 
 ```
     curl https://raw.githubusercontent.com/nycksw/ocd/master/ocd.sh -o ~/bin/ocd
-    curl https://raw.githubusercontent.com/nycksw/shlib/main/shlib -o ~/bin/shlib
-    chmod +x ~/bin/{ocd,shlib}
-    vim ~/bin/ocd  # Change OCD_REPO to your own repository.
-    ocd install
 ```
 
-See "Installation and usage" (below) for more information on how to set up your own repository.
+Create a new SSH keypair for the system:
+
+```
+   ssh-keygen -t ed25519 -f ~/.ssh/your_deploy_key ```
+```
+
+Add your new private key to your repository. Here are the
+[GitHub instructions for managing deploy keys](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/managing-deploy-keys).
+
+```
+    echo 'OCD_REPO=git@github.com:username/your-dotfiles.git' >> ~/.ocd.conf
+    echo 'OCD_IDENT=~/.ssh/your_deploy_key'
+```
+
+Finally, install your dotfiles into your home directory:
+
+```
+    ocd install
+```
 
 When you run `ocd install` it does the following:
 
@@ -24,21 +38,17 @@ When you run `ocd install` it does the following:
 
 # Installation and usage
 
-  * [Create an empty GitHub repo](https://help.github.com/articles/create-a-repo/) for your dotfiles.
-    * You'll need the repo identifier in a moment, something like: `git@github.com:username/dotfiles.git`
-    * If you're not forwarding the appropriate SSH identity for the repo you'll be using, you'll 
-      still need to set that up manually, either via forwarding or by manually copying your key to the
-      host and running an ssh-agent locally.
-  * `curl https://raw.githubusercontent.com/nycksw/ocd/master/ocd.sh -o ~/bin/ocd`
-  * `curl https://raw.githubusercontent.com/nycksw/shlib/main/shlib -o ~/bin/shlib`
-  * `vim ~/bin/ocd` and change `OCD_REPO` to point to your own repository.
-  * `ocd install` to install the system and create all the links.
-  * Add all the additional dotfiles you want to track by doing `ocd add <filename>`
-  * Use `ocd backup` to push your changes to the repo.
-  * Use `ocd restore` to sync everything from your repository to your home directory.
-  * Optional: create a `~/.favpkgs` file containing packages you routinely install on a new system.
-    * `ocd missing-pkgs` will use this to show you which packages are currently missing.
-    * Then you can do something like this: `sudo apt-get install $(ocd missing-pkgs)`
+Usage:
+```
+  ocd install:        install files from git@github.com:nycksw/dotfiles.git
+  ocd add FILE:       track a new file in the repository
+  ocd rm FILE:        stop tracking a file in the repository
+  ocd restore:        pull from git master and copy files to homedir
+  ocd backup:         push all local changes to master
+  ocd status [FILE]:  check if a file is tracked, or if there are uncommited changes
+  ocd export FILE:    create a tar.gz archive with everything in /home/e/.ocd
+  ocd missing-pkgs:   compare system against /home/e/.favpkgs and report missing
+```
 
 # Writing portable config files
 
@@ -126,8 +136,13 @@ on other distributions.
 
 ### Alternatives
 
-There are other dotfile managers! You may want to consider [dotbot](https://github.com/anishathalye/dotbot),
-[chezmoi](https://www.chezmoi.io/why-use-chezmoi/),
-[yadm](https://yadm.io/), or [GNU Stow](https://www.gnu.org/software/stow/). I wrote OCD before any of these
-existed, and I've never tried them because they seem too heavyweight for my taste, but I'm sure they offer
-advantages over this little pet script of mine.
+There are other dotfile managers! You should almost certainly use one of them instead of
+this one:
+
+* [dotbot](https://github.com/anishathalye/dotbot),
+* [chezmoi](https://www.chezmoi.io/why-use-chezmoi/),
+* [yadm](https://yadm.io/), or [GNU Stow](https://www.gnu.org/software/stow/).
+
+ I wrote OCD before any of these existed, and I've never tried them because they seem too
+ heavyweight for my taste, but I'm sure they offer advantages over this little pet script
+ of mine.
