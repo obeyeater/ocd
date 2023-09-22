@@ -25,8 +25,8 @@ OCD_IGNORE_RE="./.git"
 OCD_GIT="git -C ${OCD_DIR}"
 
 # Pretty stdio/stderr helpers.
-_err() { echo -e "\e[1;31m\u2717\e[0;0m ${*}\n"; }
-_info() { echo  -e "\e[1;32m\u2713\e[0;0m ${*}\n"; }
+_err() { echo -e "\e[1;31m\u2717\e[0;0m ${*}"; }
+_info() { echo  -e "\e[1;32m\u2713\e[0;0m ${*}"; }
 
 # Optional SSH identity for the git repository.
 if [[ -n "${OCD_IDENT-}" ]]; then
@@ -143,7 +143,6 @@ ocd_restore() {
       ln -sr "${OCD_DIR}/${existing_file}" "${new_file}"
     fi
   done
-
   popd 1>/dev/null
 
   # Some changes require cleanup that OCD won't handle; e.g., if you rename a file the old file
@@ -300,8 +299,8 @@ ocd_install() {
       # Check if an ssh-agent is active with identities in memory.
       get_idents() { ssh-add -l 2>/dev/null; }
 
-      if [[ -z "$(get_idents)" ]]; then
-        if ! ocd_ask "No SSH identities are available for \"${OCD_REPO}\". Continue anyway?"
+      if [[ -z "$(get_idents)" && -z "${OCD_IDENT}" ]]; then
+        if ! ocd_ask "No SSH identities are available for \"${OCD_REPO}\".\nContinue anyway?"
         then
           _err "Quitting due to missing SSH identities."
           return 1

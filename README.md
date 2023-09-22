@@ -1,4 +1,5 @@
-# OCD: tracking dotfiles in git
+    curl https://raw.githubusercontent.com/nycksw/ocd/master/ocd.sh -o ~/bin/ocd                          │   25  cmake ..
+    chmod +x ~/bin/ocd                                                                                    │   26  cd# OCD: tracking dotfiles in git
 
 Do you have dotfiles skewed across lots of different machines? This script allows 
 you to easily track and synchronize them using Git as a backend. It makes
@@ -8,6 +9,7 @@ Move into a new shell like so:
 
 ```
     curl https://raw.githubusercontent.com/nycksw/ocd/master/ocd.sh -o ~/bin/ocd
+    chmod +x ~/bin/ocd
 ```
 
 Create a new SSH keypair for the system:
