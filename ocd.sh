@@ -5,20 +5,43 @@
 # See https://github.com/nycksw/ocd for detailed information.
 #
 # To install: /path/to/ocd install
-#
-# Pattern for files to ignore when doing anything with OCD (find, tar, etc.)
-OCD_IGNORE_RE="./.git"
+
+# Use shlib for common functions. <https://github.com/nycksw/shlib>
+. "$(command -v shlib)"
+
+# Env vars may be set separately in this file.
+OCD_CONF="${OCD_CONF:-${HOME}/.ocd.conf}"
+if [[ -f "${OCD_CONF}" ]]; then
+  source "${OCD_CONF}"
+fi
 
 # These defaults may be overridden via the environment; see unit tests for examples.
-OCD_REPO="${OCD_REPO:-git@github.com:nycksw/dotfiles.git}"
+OCD_REPO="${OCD_REPO:-git@github.com:username/your-dotfiles.git}"
 OCD_HOME="${OCD_HOME:-$HOME}"
 OCD_DIR="${OCD_DIR:-${HOME}/.ocd}"
 OCD_FAV_PKGS="${OCD_FAV_PKGS:-$OCD_HOME/.favpkgs}"
 OCD_FORCE="${OCD_FORCE:-false}"
 OCD_ASSUME_YES="${OCD_ASSUME_YES:-false}"  # Set to true for non-interactive/testing.
 
+# Pattern for files to ignore when doing anything with OCD (find, tar, etc.)
+OCD_IGNORE_RE="./.git"
+
 # For git commands that need OCD_DIR as the working directory.
 OCD_GIT="git -C ${OCD_DIR}"
+
+# Pretty stdio/stderr helpers.
+_err() { shlib::warn "$@"; }
+_info() { shlib::info "$@"; }
+
+# Optional SSH identity for the git repository.
+if [[ ! -z "${OCD_IDENT-}" ]]; then
+  if [[ ! -f "${OCD_IDENT}" ]]; then
+    _err "Couldn't find SSH identity from ${OCD_CONF}: ${OCD_IDENT}"
+    exit 1
+  fi
+  GIT_SSH_COMMAND="ssh -i ${OCD_IDENT}"
+  export GIT_SSH_COMMAND
+fi
 
 USAGE=$(cat << EOF
 Usage:
@@ -32,22 +55,6 @@ Usage:
   ocd missing-pkgs:   compare system against ${OCD_FAV_PKGS} and report missing
 EOF
 )
-
-# Use shlib for common functions. <https://github.com/nycksw/shlib>
-. "$(command -v shlib)"
-
-# stdio
-_err() { shlib::warn "$@"; }
-_info() { shlib::info "$@"; }
-
-if command -v dpkg >/dev/null; then
-  OCD_PKG_MGR="dpkg"
-else
-  if ! command -v git >/dev/null; then
-    _err "Couldn't find git or install it."
-    return 1
-  fi
-fi
 
 ##########
 # We do a lot of manipulating files based on paths relative to the user's home directory, so this
@@ -70,7 +77,7 @@ ocd_ask() {
 }
 
 ##########
-# Install a package via sudo. (Debian-only)
+# Install a package via sudo/dpkg. (Debian-only)
 ocd_install_pkg() {
   if [[ -z "${1-}" ]]; then
     return 1
@@ -78,10 +85,10 @@ ocd_install_pkg() {
 
   _info "Installing ${1}..."
 
-  if [[ "${OCD_PKG_MGR}" == "dpkg" ]]; then
+  if command -v dpkg >/dev/null; then
     sudo apt-get install -y "${1}"
   else
-    _err "Couldn't detect a suitable package manager."
+    _err "No \`dpkg\` available."
     return 1
   fi
 
@@ -110,24 +117,6 @@ ocd_restore() {
   for dir in ${dirs}; do
     mkdir -p "${OCD_HOME}/${dir}"
   done
-
-  # If we're making changes to ~/.ocd.sh outside of the repo, it's easy to accidentally
-  # lose them when restoring from the repo. Check for this condition and keep the mods.
-  #
-  # DISABLING THIS following the move away from sourced functions. Now the binary name can
-  # be anything and the binary can be anywhere in the tree, so doing this check would be
-  # more complicated. I think it's best to just ignore the case where somebody is ocd-tracking
-  # the OCD script itself (...but, I'll leave this here, commented out, just in case I forgot
-  # some serious gotcha condition.)
-  #
-  #if [[ -f "${OCD_DIR}/.ocd.sh" ]] && \
-  #    ! cmp "${OCD_DIR}/.ocd.sh" "${BASH_SOURCE[0]}" >/dev/null; then
-  #  _info "NOTE: the local version of ocd.sh differs from the one in the repo."
-  #  _info "  Keeping the local version, and adding it to '${OCD_DIR}'."
-  #  _info "  Use 'git checkout -f ${OCD_DIR}/.ocd.sh' to overwrite local changes."
-  #  _info "  Use 'ocd_backup' to commit the local changes to the repo."
-  #  cp "${BASH_SOURCE[0]}" ${OCD_DIR}/.ocd.sh
-  #fi
 
   _info  "Restoring..."
   pushd "${OCD_DIR}" 1>/dev/null
@@ -191,7 +180,12 @@ ocd_status() {
     return 0
   fi
 
-  # If no args were passed, run `git status` instead.
+  # If no args were passed, print env vars and  run `git status` instead.
+  _info "OCD environment:"
+  declare -p | grep 'declare -- OCD_' | sed 's/^.*OCD_/OCD_/' | sort
+  printf '\n'
+
+  _info "git status:"
   ${OCD_GIT} status
 }
 
