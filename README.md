@@ -2,53 +2,77 @@
 
 Do you have dotfiles skewed across lots of different machines? This script allows 
 you to easily track and synchronize them using Git as a backend. It makes
-setting up a new system very fast and simple.
+setting up a new system very fast and simple, and minimizes "config drift".
 
-Move into a new shell like so:
-
+It works by configuring symlinks for all your dotfiles pointing at the git-tracked versions in `~/.ocd`, like so:
 ```
-    curl https://raw.githubusercontent.com/nycksw/ocd/master/ocd.sh -o ~/bin/ocd
-    chmod +x ~/bin/ocd
-```
-
-Create a new SSH keypair for the system:
-
-```
-   ssh-keygen -t ed25519 -f ~/.ssh/your_deploy_key
+$ ls -l ~/.bashrc
+lrwxrwxrwx 1 luser luser 12 Aug 25 02:25 /home/luser/.bashrc -> .ocd/.bashrc
 ```
 
-Add your new private key to your repository. Here are the
+OCD functions are wrappers for moving files in and out of "tracked" status,
+restoring files, backup up changes to Git, and so forth.
+
+To move into a new shell, read on.
+
+## Download the OCD script
+Replace `~/bin` with wherever you like to keep your tools. Make sure it's in your `PATH`.
+```
+curl https://raw.githubusercontent.com/nycksw/ocd/master/ocd.sh -o ~/bin/ocd
+chmod +x ~/bin/ocd
+```
+## Set the repository
+```
+echo 'OCD_REPO=git@github.com:luser/my-dotfiles.git' >> ~/.ocd.conf
+```
+## Install an SSH key for the repository
+Below shows how to create a new SSH keypair for the system. 
+```
+ssh-keygen -t ed25519 -f ~/.ssh/your_deploy_key
+```
+
+Add your new public key to your origin repository. Here are the
 [GitHub instructions for managing deploy keys](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/managing-deploy-keys).
 
+If you'd like to use an existing key, just copy it to the new system and
+set `OCD_IDENT`. You'll need to set `OCD_REPO` there also: 
+
 ```
-    echo 'OCD_REPO=git@github.com:username/your-dotfiles.git' >> ~/.ocd.conf
-    echo 'OCD_IDENT=~/.ssh/your_deploy_key'
+echo 'OCD_IDENT=~/.ssh/your_deploy_key' >> ~/.ocd.conf
 ```
 
+## Install the dotfiles
 Finally, install your dotfiles into your home directory:
 
 ```
-    ocd install
+ocd install
 ```
 
 When you run `ocd install` it does the following:
 
-  * Checks if your SSH identity is available (this is necessary to clone a RW git repository).
-  * Installs `git(1)` if it's not already installed
+  * Checks if an SSH identity is available (this is necessary to clone a RW git repository).
+  * Installs `git` if it's not already installed
   * Runs `git clone` of your repository into your OCD directory (default is `~/.ocd`)
 
-# Installation and usage
+## Optional: bash command completion
+You can optionally install `bash` completion helpers:
 
-Usage:
 ```
-  ocd install:        install files from git@github.com:nycksw/dotfiles.git
-  ocd add FILE:       track a new file in the repository
-  ocd rm FILE:        stop tracking a file in the repository
-  ocd restore:        pull from git master and copy files to homedir
-  ocd backup:         push all local changes to master
-  ocd status [FILE]:  check if a file is tracked, or if there are uncommited changes
-  ocd export FILE:    create a tar.gz archive with everything in /home/e/.ocd
-  ocd missing-pkgs:   compare system against /home/e/.favpkgs and report missing
+curl https://raw.githubusercontent.com/nycksw/ocd/master/ocd_completion.sh -o /tmp/ocd
+sudo mv /tmp/ocd /etc/bash_completion.d/ocd
+chmod 644 /etc/bash_completion.d/ocd
+```
+
+# Usage
+```
+ocd install:        install files from git@github.com:nycksw/dotfiles.git
+ocd add FILE:       track a new file in the repository
+ocd rm FILE:        stop tracking a file in the repository
+ocd restore:        pull from git master and copy files to homedir
+ocd backup:         push all local changes to master
+ocd status [FILE]:  check if a file is tracked, or if there are uncommited changes
+ocd export FILE:    create a tar.gz archive with everything in /home/e/.ocd
+ocd missing-pkgs:   compare system against /home/e/.favpkgs and report missing
 ```
 
 # Writing portable config files
@@ -59,8 +83,10 @@ make sure they're portable across all the systems you use. For example, my
 host-centric customizations (for example, hosts I use at work) in a separate file.
 Consider these lines, which I include at the end of my `.bashrc`:
 
-    source $HOME/.bashrc_$(hostname -f)
-    source $HOME/.bashrc_$(dnsdomainname)
+```
+source $HOME/.bashrc_$(hostname -f)
+source $HOME/.bashrc_$(dnsdomainname)
+```
 
 This way, settings are only applied in the appropriate context.
 
@@ -95,50 +121,43 @@ If I change something on any of my systems, I can easily push the change
 back to my master git repository. For example:
 
 ```
-  $ ocd backup
+$ ocd backup
+✓ git status in /home/e/.ocd:
 
-  On branch master
-  Your branch is up-to-date with 'origin/master'.
+On branch master
+Your branch is up to date with 'origin/master'.
 
-  Changes not staged for commit:
-    (use "git add <file>..." to update what will be committed)
-    (use "git checkout -- <file>..." to discard changes in working directory)
-
-          modified:   .bashrc
-
-  [...]
-
-  Commit and push now? (yes/no): yes
-
-  [... add a commit message here ...]
-
-  [master 623d0be] testing
-   1 file changed, 1 insertion(+)
-  Counting objects: 5, done.
-  Delta compression using up to 12 threads.
-  Compressing objects: 100% (3/3), done.
-  Writing objects: 100% (3/3), 295 bytes | 0 bytes/s, done.
-  Total 3 (delta 2), reused 0 (delta 0)
-  To git@github.com:nycksw/dotfiles.git
-     88bfe09..623d0be  master -> master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+        modified:   .bashrc
+[...]
+Commit everything and push to 'git@github.com:nycksw/dotfiles.git'? [NO/yes]: yes
+[master 5ac968a] Remove bash builder line.
+ 1 file changed, 1 deletion(-)
+[...]
+To github.com:nycksw/dotfiles.git
+   684882f..5ac968a  master -> master
 ```
 
-### Caveats
+# Caveats
 
+## Merges
 *Merging git conflicts*: Occasionally I'll change something on more than one system without
 running `ocd backup`, and git will complain that it can't run `git pull` without
 first committing local changes. This is easy to fix by `cd`ing to `~/.ocd`
 and doing a typical merge, a simple `git push`, a `git checkout -f $filename`
 to overwrite changes, or some other resolution.
 
-*Portability*: I've run OCD on a few different distributions, but if you use something besides
-Debian, NixOS, or Ubuntu it may not work. I'd love any pull requests to make this script work
-on other distributions. 
+# Portability of this script
 
-### Alternatives
+I've run OCD on a few different distributions, but it might not work on
+yours. Fork this repo and go nuts. `ocd.sh` isn't the long are complicated.
+
+## Alternatives
 
 There are other dotfile managers! You should almost certainly use one of them instead of
-this one:
+this mine. Here's a list:
 
 * [dotbot](https://github.com/anishathalye/dotbot),
 * [chezmoi](https://www.chezmoi.io/why-use-chezmoi/),
