@@ -1,6 +1,3 @@
-    curl https://raw.githubusercontent.com/nycksw/ocd/master/ocd.sh -o ~/bin/ocd                          │   25  cmake ..
-    chmod +x ~/bin/ocd                                                                                    │   26  cd# OCD: tracking dotfiles in git
-
 Do you have dotfiles skewed across lots of different machines? This script allows 
 you to easily track and synchronize them using Git as a backend. It makes
 setting up a new system very fast and simple.
