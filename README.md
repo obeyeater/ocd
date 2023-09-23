@@ -143,7 +143,8 @@ this one:
 
 * [dotbot](https://github.com/anishathalye/dotbot),
 * [chezmoi](https://www.chezmoi.io/why-use-chezmoi/),
-* [yadm](https://yadm.io/), or [GNU Stow](https://www.gnu.org/software/stow/).
+* [yadm](https://yadm.io/)
+* [GNU Stow](https://www.gnu.org/software/stow/).
 
  I wrote OCD before any of these existed, and I've never tried them because they seem too
  heavyweight for my taste, but I'm sure they offer advantages over this little pet script
