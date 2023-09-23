@@ -143,16 +143,16 @@ To github.com:nycksw/dotfiles.git
 # Caveats
 
 ## Merges
-*Merging git conflicts*: Occasionally I'll change something on more than one system without
+Occasionally I'll change something on more than one system without
 running `ocd backup`, and git will complain that it can't run `git pull` without
-first committing local changes. This is easy to fix by `cd`ing to `~/.ocd`
-and doing a typical merge, a simple `git push`, a `git checkout -f $filename`
+first committing local changes. This is easy to fix by changing into the `~/.ocd` 
+directory and doing a typical merge, a simple `git push`, `git checkout -f $filename`
 to overwrite changes, or some other resolution.
 
 # Portability of this script
 
-I've run OCD on a few different distributions, but it might not work on
-yours. Fork this repo and go nuts. `ocd.sh` isn't the long are complicated.
+I've run OCD on several different distributions, but it might not work on
+yours. Fork this repo and go nuts. `ocd.sh` isn't that long or complicated.
 
 ## Alternatives
 
