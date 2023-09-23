@@ -159,10 +159,10 @@ yours. Fork this repo and go nuts. `ocd.sh` isn't the long are complicated.
 There are other dotfile managers! You should almost certainly use one of them instead of
 this mine. Here's a list:
 
-* [dotbot](https://github.com/anishathalye/dotbot),
-* [chezmoi](https://www.chezmoi.io/why-use-chezmoi/),
+* [dotbot](https://github.com/anishathalye/dotbot)
+* [chezmoi](https://www.chezmoi.io/why-use-chezmoi/)
 * [yadm](https://yadm.io/)
-* [GNU Stow](https://www.gnu.org/software/stow/).
+* [GNU Stow](https://www.gnu.org/software/stow/)
 
  I wrote OCD before any of these existed, and I've never tried them because they seem too
  heavyweight for my taste, but I'm sure they offer advantages over this little pet script
