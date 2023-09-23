@@ -4,7 +4,7 @@ Do you have dotfiles skewed across lots of different machines? This script allow
 you to easily track and synchronize them using Git as a backend. It makes
 setting up a new system very fast and simple, and minimizes "config drift".
 
-It works by configuring symlinks for all your dotfiles pointing at the git-tracked versions in `~/.ocd`, like so:
+It works by configuring symlinks for all your dotfiles pointing at the Git-tracked versions in `~/.ocd`, like so:
 ```
 $ ls -l ~/.bashrc
 lrwxrwxrwx 1 luser luser 12 Aug 25 02:25 /home/luser/.bashrc -> .ocd/.bashrc
@@ -65,14 +65,14 @@ chmod 644 /etc/bash_completion.d/ocd
 
 # Usage
 ```
-ocd install:        install files from git@github.com:nycksw/dotfiles.git
+ocd install:        install files from <OCD_REPO>
 ocd add FILE:       track a new file in the repository
 ocd rm FILE:        stop tracking a file in the repository
 ocd restore:        pull from git master and copy files to homedir
-ocd backup:         push all local changes to master
+ocd backup:         push all local changes upstream
 ocd status [FILE]:  check if a file is tracked, or if there are uncommited changes
-ocd export FILE:    create a tar.gz archive with everything in /home/e/.ocd
-ocd missing-pkgs:   compare system against /home/e/.favpkgs and report missing
+ocd export FILE:    create a tar.gz archive with everything in ~/.ocd
+ocd missing-pkgs:   compare system against ~/.favpkgs and report missing
 ```
 
 # Writing portable config files
