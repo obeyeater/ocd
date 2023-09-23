@@ -1,3 +1,5 @@
+# Optimally Configured Dotfiles
+
 Do you have dotfiles skewed across lots of different machines? This script allows 
 you to easily track and synchronize them using Git as a backend. It makes
 setting up a new system very fast and simple.
@@ -12,7 +14,7 @@ Move into a new shell like so:
 Create a new SSH keypair for the system:
 
 ```
-   ssh-keygen -t ed25519 -f ~/.ssh/your_deploy_key ```
+   ssh-keygen -t ed25519 -f ~/.ssh/your_deploy_key
 ```
 
 Add your new private key to your repository. Here are the
