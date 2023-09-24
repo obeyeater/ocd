@@ -1,10 +1,7 @@
 #!/usr/bin/env bash
 #shellcheck disable=SC1091,SC2086,SC2164
-
-# OCD: Optimally Configured Dotfiles
-# See https://github.com/nycksw/ocd for detailed information.
 #
-# To install: /path/to/ocd install
+# OCD: Optimally Configured Dotfiles <https://github.com/nycksw/ocd>
 
 # Env vars may be set separately in "~/.ocd.conf".
 OCD_CONF="${OCD_CONF:-${HOME}/.ocd.conf}"
