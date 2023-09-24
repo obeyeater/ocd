@@ -55,7 +55,7 @@ When you run `ocd install` it does the following:
   * Installs `git` if it's not already installed
   * Runs `git clone` of your repository into your OCD directory (default is `~/.ocd`)
 
-## Optional: bash command completion
+## Optional: a `bash_completion` config
 You can optionally install `bash` completion helpers:
 
 ```
@@ -82,6 +82,7 @@ This process may require you think a little differently about your dotfiles to
 make sure they're portable across all the systems you use. For example, my
 `.bashrc` is suitable for *every* system I use, and I put domain-centric or
 host-centric customizations (for example, hosts I use at work) in a separate file.
+
 Consider these lines, which I include at the end of my `.bashrc`:
 
 ```
