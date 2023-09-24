@@ -36,7 +36,7 @@ Add your new public key to your origin repository. Here are the
 [GitHub instructions for managing deploy keys](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/managing-deploy-keys).
 
 If you'd like to use an existing key, just copy it to the new system and
-set `OCD_IDENT`. You'll need to set `OCD_REPO` there also: 
+set `OCD_IDENT`: 
 
 ```
 echo 'OCD_IDENT=~/.ssh/your_deploy_key' >> ~/.ocd.conf
