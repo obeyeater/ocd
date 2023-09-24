@@ -22,11 +22,12 @@ curl https://raw.githubusercontent.com/nycksw/ocd/master/ocd.sh -o ~/bin/ocd
 chmod +x ~/bin/ocd
 ```
 ## Set the repository
+You'll need a Git repository for storing your dotfiles. Put its URL in your OCD config:
 ```
 echo 'OCD_REPO=git@github.com:luser/my-dotfiles.git' >> ~/.ocd.conf
 ```
 ## Install an SSH key for the repository
-Below shows how to create a new SSH keypair for the system. 
+Below shows how to create a new SSH keypair for the host. 
 ```
 ssh-keygen -t ed25519 -f ~/.ssh/your_deploy_key
 ```
@@ -50,7 +51,7 @@ ocd install
 
 When you run `ocd install` it does the following:
 
-  * Checks if an SSH identity is available (this is necessary to clone a RW git repository).
+  * Checks if an SSH identity is available (this is necessary to clone a RW git repository)
   * Installs `git` if it's not already installed
   * Runs `git clone` of your repository into your OCD directory (default is `~/.ocd`)
 
@@ -101,11 +102,11 @@ committing. Just edit in place and run `ocd backup`.
 
 There are also helper functions: `ocd status` tells me if I'm behind the
 master, and `ocd missing-pkgs` tells me if my installed
-packages differ from my basic preferences recorded in `~/.favpkgs` (for
+packages differ from my basic preferences recorded in `~/.favpkgs`; for
 example, your `openbox` autostart may call programs that are not installed
-by default on a new system; `ocd missing-pkgs` is just a very simple way
+by default on a new system, and so `ocd missing-pkgs` is just a very simple way
 to record these dependencies and make it easy to install them, e.g.: `sudo
-apt-get install $(ocd missing-pkgs)`)
+apt-get install $(ocd missing-pkgs)`
 
 Adding new files is just:
   * `ocd add <filename>`
@@ -118,7 +119,7 @@ another host where you don't want to use OCD.
 ### Example output
 
 If I change something on any of my systems, I can easily push the change
-back to my master git repository. For example:
+back to my Git repository. For example:
 
 ```
 $ ocd backup
