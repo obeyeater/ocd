@@ -61,7 +61,8 @@ ocd_filename_split() {
     return 1
   fi
 
-  if ! find ${OCD_USER_HOME} -wholename ${1} | grep -q . ; then
+  #if ! find ${OCD_USER_HOME} -wholename $(realpath ${1}) | grep -q . ; then
+  if [[ ! "$(realpath ${1})" == "${OCD_USER_HOME}"* ]]; then
     ocd_err "OCD only works on files within the user's home directory."
     exit 1
   fi

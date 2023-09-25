@@ -5,7 +5,18 @@ _ocd() {
   prev="${COMP_WORDS[COMP_CWORD-1]}"
   opts="install add rm restore backup status export missing-pkgs"
 
-  COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+  case "${prev}" in
+    add|rm|status)
+      COMPREPLY=( $(compgen -f -- "${cur}") )
+      ;;
+    *)
+      if [[ "${COMP_WORDS[@]:0:${COMP_CWORD}}" =~ (add|rm|status) ]]; then
+        COMPREPLY=( $(compgen -f -- "${cur}") )
+      else
+        COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+      fi
+      ;;
+  esac
 }
 
 complete -F _ocd ocd

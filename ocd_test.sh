@@ -23,15 +23,15 @@ test_fail() {
 }
 
 setup() {
-  OCD_GIT_DIR=$(mktemp -d --suffix='.OCD_GIT_DIR')
   OCD_USER_HOME=$(mktemp -d --suffix='.OCD_USER_HOME')
+  OCD_GIT_DIR="${OCD_USER_HOME}.OCD_GIT_DIR"
   OCD_REPO=$(mktemp -d --suffix='.OCD_REPO')
-  export OCD_GIT_DIR OCD_USER_HOME OCD_REPO
+  export OCD_USER_HOME OCD_GIT_DIR OCD_REPO
 
   export OCD_ASSUME_YES="true"  # Non-interactive mode.
   export OCD_CONF=/dev/null     # No custom env vars for testing.
 
-  git init --bare "${OCD_REPO}"
+  git init --bare "${OCD_REPO}" 2>/dev/null
 }
 
 test_install() {
