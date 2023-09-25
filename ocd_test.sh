@@ -23,10 +23,10 @@ test_fail() {
 }
 
 setup() {
-  OCD_DIR=$(mktemp -d --suffix='.OCD_DIR')
-  OCD_HOME=$(mktemp -d --suffix='.OCD_HOME')
+  OCD_GIT_DIR=$(mktemp -d --suffix='.OCD_GIT_DIR')
+  OCD_USER_HOME=$(mktemp -d --suffix='.OCD_USER_HOME')
   OCD_REPO=$(mktemp -d --suffix='.OCD_REPO')
-  export OCD_DIR OCD_HOME OCD_REPO
+  export OCD_GIT_DIR OCD_USER_HOME OCD_REPO
 
   export OCD_ASSUME_YES="true"  # Non-interactive mode.
   export OCD_CONF=/dev/null     # No custom env vars for testing.
@@ -38,11 +38,11 @@ test_install() {
   ./ocd.sh install
 
   # Create test files in git repo.
-  mkdir -p ${OCD_DIR}/a/b/c
-  touch "${OCD_DIR}"/{foo,bar,baz} "${OCD_DIR}"/a/b/c/qux
-  git -C "${OCD_DIR}" add .
-  git -C "${OCD_DIR}" commit -a -m "Files for testing."
-  git -C "${OCD_DIR}" push
+  mkdir -p ${OCD_GIT_DIR}/a/b/c
+  touch "${OCD_GIT_DIR}"/{foo,bar,baz} "${OCD_GIT_DIR}"/a/b/c/qux
+  git -C "${OCD_GIT_DIR}" add .
+  git -C "${OCD_GIT_DIR}" commit -a -m "Files for testing."
+  git -C "${OCD_GIT_DIR}" push
 
   # Pull the files we created above to the testing repo.
   ./ocd.sh restore
@@ -51,25 +51,25 @@ test_install() {
 test_file_tracking() {
   test_header
   # Add untracked files to the homedir.
-  touch "${OCD_HOME}/fred" "${OCD_HOME}/a/b/c/wilma"
+  touch "${OCD_USER_HOME}/fred" "${OCD_USER_HOME}/a/b/c/wilma"
 
 	# Add files from homedir to the repo.
-  ./ocd.sh add "${OCD_HOME}"/fred "${OCD_HOME}"/a/b/c/wilma
-	test -f "${OCD_DIR}"/fred || test_fail
-	test -f "${OCD_DIR}"/a/b/c/wilma || test_fail
+  ./ocd.sh add "${OCD_USER_HOME}"/fred "${OCD_USER_HOME}"/a/b/c/wilma
+	test -f "${OCD_GIT_DIR}"/fred || test_fail
+	test -f "${OCD_GIT_DIR}"/a/b/c/wilma || test_fail
  
 	# Stop tracking a file.
-  ./ocd.sh rm "${OCD_HOME}"/fred "${OCD_HOME}"/a/b/c/wilma
-	test ! -f "${OCD_DIR}"/fred || test_fail
-	test ! -f "${OCD_DIR}"/a/b/c/wilma || test_fail
+  ./ocd.sh rm "${OCD_USER_HOME}"/fred "${OCD_USER_HOME}"/a/b/c/wilma
+	test ! -f "${OCD_GIT_DIR}"/fred || test_fail
+	test ! -f "${OCD_GIT_DIR}"/a/b/c/wilma || test_fail
 }
 
 test_status() {
   echo "Testing status for untracked file..."
-  ./ocd.sh status "${OCD_HOME}"/fred
-  if ./ocd.sh status "${OCD_HOME}"/fred | grep -q "is tracked"; then test_fail; fi
+  ./ocd.sh status "${OCD_USER_HOME}"/fred
+  if ./ocd.sh status "${OCD_USER_HOME}"/fred | grep -q "is tracked"; then test_fail; fi
   echo "Testing status for tracked file..."
-  if ./ocd.sh status "${OCD_HOME}"/bar | grep -q "not tracked"; then test_fail; fi
+  if ./ocd.sh status "${OCD_USER_HOME}"/bar | grep -q "not tracked"; then test_fail; fi
 }
 
 test_backup() {
@@ -77,14 +77,14 @@ test_backup() {
 }
 
 test_export() {
-  ./ocd.sh export "${OCD_HOME}"/export.tar.gz
-  test -f "${OCD_HOME}"/export.tar.gz || test_fail
+  ./ocd.sh export "${OCD_USER_HOME}"/export.tar.gz
+  test -f "${OCD_USER_HOME}"/export.tar.gz || test_fail
 }
 
 teardown() {
   test_header
-  rm -rf "${OCD_DIR}"
-  rm -rf "${OCD_HOME}"
+  rm -rf "${OCD_GIT_DIR}"
+  rm -rf "${OCD_USER_HOME}"
   rm -rf "${OCD_REPO}"
 }
 
