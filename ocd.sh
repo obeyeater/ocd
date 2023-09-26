@@ -207,7 +207,9 @@ ocd_status() {
 
   # If no args were passed, print env vars and  run `git status` instead.
   ocd_info "OCD configuration:"
-  declare -p | grep 'declare -- OCD_' | sed 's/^.*OCD_/OCD_/' | sort
+  # OCD_* vars can exist as environmental variables as well as shell variables, see we'll
+  # grep through both and sort the output.
+  sort -u <( env | grep OCD_) <(declare -p | grep 'declare -- OCD_' | sed 's/^.*OCD_/OCD_/')
   printf '\n'
 
   ocd_info "git status:"
@@ -219,7 +221,7 @@ ocd_status() {
 ocd_missing_pkgs() {
   [[ -f "$OCD_FAV_PKGS" ]] || touch "$OCD_FAV_PKGS"
 
-  if command -v dzpkg 1>/dev/null; then
+  if command -v dpkg 1>/dev/null; then
     missing_pkgs=$(dpkg --get-selections | grep '\sinstall$' | awk '{print $1}' | sort \
         | comm -13 - <(grep -Ev '(^-|^ *#)' "$OCD_FAV_PKGS" \
         | sed 's/ *#.*$//' |sort))
@@ -370,7 +372,7 @@ ocd_install() {
     if [[ ! "${OCD_ASSUME_YES}" == "true" ]] && \
       ocd_ask "Install the bash completion config for OCD? (requires sudo)"; then
       if [[ -d /etc/bash_completion.d ]]; then
-        echo -e ${_OCD_BASH_COMPLETION_CONFIG} | sudo tee /etc/bash_completion.d/ocd > /dev/null
+        echo -e "${_OCD_BASH_COMPLETION_CONFIG}" | sudo tee /etc/bash_completion.d/ocd > /dev/null
         sudo chmod 644 /etc/bash_completion.d/ocd
         ocd_info "Installed: /etc/bash_completion.d/ocd"
       else
