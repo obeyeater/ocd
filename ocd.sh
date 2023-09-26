@@ -11,7 +11,7 @@ if [[ -f "${OCD_CONF}" ]]; then
     if [[ "$key" == "OCD_"* ]]; then eval "$key=$value"; fi
   done < "${OCD_CONF}"
 fi
-# Other globals have an underscore prepended, e.g.: _OCD_FN_BASENAME
+# (Other globals have an underscore prepended, e.g.: _OCD_FN_BASENAME)
 
 # These defaults may be overridden via the environment.
 OCD_REPO="${OCD_REPO:-git@github.com:username/your-dotfiles.git}"
@@ -62,7 +62,7 @@ EOF
 ocd_filename_split() {
   if [[ ! -f "${1}" ]]; then
     ocd_err "${1} doesn't exist or is not a regular file."
-    return 1
+    exit 1
   fi
 
   #if ! find ${OCD_USER_HOME} -wholename $(realpath ${1}) | grep -q . ; then
@@ -138,7 +138,7 @@ ocd_restore() {
   ocd_info "Running: git-pull:"
   ${_OCD_GIT} pull || {
     ocd_err  "error: couldn't git-pull; check status in ${OCD_GIT_DIR}"
-    return 1
+    exit 1
   }
 
   files=$(cd ${OCD_GIT_DIR}; find . -type f -o -type l | grep -Ev  "${_OCD_IGNORE_RE}")
@@ -244,7 +244,7 @@ ocd_missing_pkgs() {
 ocd_add() {
   if [[ -z "${1-}" ]]; then
     ocd_err "Usage: ocd_add <filename>"
-    return 1
+    exit 1
   fi
 
   ocd_filename_split ${1}  # Populate "_FILE_*" globals.
@@ -278,14 +278,14 @@ ocd_add() {
 ocd_rm() {
   if [[ -z "$1" ]];then
     ocd_info "Usage: ocd_rm <filename>"
-    return 1
+    exit 1
   fi
 
   ocd_filename_split ${1}  # Populate "_FILE_*" globals.
 
   if [[ ! -f "${_OCD_FN_IN_GIT}" ]]; then
     ocd_err "Not tracked: ${_OCD_FN_IN_HOME}"
-    return 1
+    exit 1
   fi
 
   rm -f "${_OCD_FN_IN_HOME}"  # Remove symlink.
@@ -339,7 +339,7 @@ ocd_install() {
         if ! ocd_ask "No SSH identities are available for \"${OCD_REPO}\".\nContinue anyway?"
         then
           ocd_err "Quitting due to missing SSH identities."
-          return 1
+          exit 1
         fi
       fi
     fi
@@ -368,7 +368,7 @@ ocd_install() {
       fi
     else
       ocd_err "Couldn't clone repository: ${OCD_REPO}"
-      return 1
+      exit 1
     fi
 
     # Setup bash completion for OCD.
