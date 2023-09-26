@@ -3,12 +3,15 @@
 #
 # OCD: Optimally Configured Dotfiles
 # See https://github.com/nycksw/ocd for detailed information.
-#
-# Globals beginning with "OCD_" may be set separately in "~/.ocd.conf".
-# Other globals have an underscore prepended, e.g.: _OCD_FN_BASENAME
 
+# Globals beginning with "OCD_" may be set separately in "~/.ocd.conf":
 OCD_CONF="${OCD_CONF:-${HOME}/.ocd.conf}"
-if [[ -f "${OCD_CONF}" ]]; then source "${OCD_CONF}"; fi
+if [[ -f "${OCD_CONF}" ]]; then
+  while IFS='=' read -r key value; do
+    if [[ "$key" == "OCD_"* ]]; then eval "$key=$value"; fi
+  done < "${OCD_CONF}"
+fi
+# Other globals have an underscore prepended, e.g.: _OCD_FN_BASENAME
 
 # These defaults may be overridden via the environment.
 OCD_REPO="${OCD_REPO:-git@github.com:username/your-dotfiles.git}"
