@@ -29,7 +29,8 @@ setup() {
   export OCD_USER_HOME OCD_GIT_DIR OCD_REPO
 
   export OCD_ASSUME_YES="true"  # Non-interactive mode.
-  export OCD_CONF=/dev/null     # No custom env vars for testing.
+
+  export OCD_CONF=${OCD_USER_HOME}/.ocd.conf-unused  # No custom env vars for testing.
 
   git init --bare "${OCD_REPO}" 2>/dev/null
 }

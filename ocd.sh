@@ -4,10 +4,16 @@
 # OCD: Optimally Configured Dotfiles
 # See https://github.com/nycksw/ocd for detailed information.
 
+CHECK_PERMS() {
+  if (( ( 8#$(stat -L -c '%a' ${1}) & 8#002 ) != 0 )); then
+    echo "File \"${1}\" may be modified by anyone; exiting." >&2 && exit 1
+  fi
+}; CHECK_PERMS "${BASH_SOURCE[0]}" 
+
 # Globals beginning with "OCD_" may be set separately in "~/.ocd.conf":
 # (Other globals have an underscore prepended, e.g.: _OCD_FN_BASENAME)
 
-OCD_CONF="${OCD_CONF:-${HOME}/.ocd.conf}"
+OCD_CONF="${OCD_CONF:-${HOME}/.ocd.conf}" && CHECK_PERMS "${OCD_CONF}"
 if [[ -f "${OCD_CONF}" ]]; then source <( grep '^OCD_' ${OCD_CONF} ); fi
 
 # These defaults may be overridden via the environment.
