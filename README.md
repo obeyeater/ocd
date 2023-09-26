@@ -1,19 +1,22 @@
 # Optimally Configured Dotfiles
 
-Do you have dotfiles skewed across lots of different machines? This script allows 
-you to easily track and synchronize them using Git as a backend. It makes
-setting up a new system very fast and simple, and minimizes "config drift".
+Do you have dotfiles skewed across lots of different machines?
 
-It works by configuring symlinks for all your dotfiles pointing at the Git-tracked versions in `~/.ocd`, like so:
+This script allows you to easily track and synchronize them using Git as a backend. It makes
+setting up a new system very fast and simple, and minimizes "config drift", i.e. slightly
+different versions of your configs scattered across the various machines you use.
+
+OCD works by configuring symlinks for all your dotfiles pointing at the Git-tracked versions in `~/.ocd`, like so:
 ```
 $ ls -l ~/.bashrc
 lrwxrwxrwx 1 luser luser 12 Aug 25 02:25 /home/luser/.bashrc -> .ocd/.bashrc
 ```
 
 OCD functions are wrappers for moving files in and out of "tracked" status,
-restoring files, backup up changes to Git, and so forth.
+restoring files, backup changes to the upstream Git repository, and so forth.
 
-To move into a new shell, read on.
+To use this, you just need a centrally accessible Git repo (e.g. a repo called "`dotfiles`"
+on Github) and this one shellscript.
 
 ## Download the OCD script
 Replace `~/bin` with wherever you like to keep your tools. Make sure it's in your `PATH`.
@@ -42,27 +45,19 @@ set `OCD_IDENT`:
 echo 'OCD_IDENT=~/.ssh/your_deploy_key' >> ~/.ocd.conf
 ```
 
-## Install the dotfiles
+## Install your dotfiles via OCD
 Finally, install your dotfiles into your home directory:
-
 ```
 ocd install
 ```
-
 When you run `ocd install` it does the following:
 
-  * Checks if an SSH identity is available (this is necessary to clone a RW git repository)
-  * Installs `git` if it's not already installed
-  * Runs `git clone` of your repository into your OCD directory (default is `~/.ocd`)
-
-## Optional: a `bash_completion` config
-You can optionally install `bash` completion helpers:
-
-```
-curl https://raw.githubusercontent.com/nycksw/ocd/master/ocd_completion.sh -o /tmp/ocd
-sudo mv /tmp/ocd /etc/bash_completion.d/ocd
-chmod 644 /etc/bash_completion.d/ocd
-```
+  * checks if an SSH identity is available (this is necessary to clone a RW git repository)
+  * runs `git clone`, syncing your central dotfile repository into your OCD directory; the default destination is `~/.ocd`.
+  * creates symlinks in your home directory pointing at versions in `~/.ocd` (the local Git repo).
+  * (Debian-only) tells you which of your favorite packages are missing from the system;
+    * this requires keeping a list of your favorite packages in a file called `~/.favpkgs`.
+  * offers to install `bash` completion for itself (optional, requires `sudo`.)
 
 # Usage
 ```
@@ -154,7 +149,10 @@ to overwrite changes, or some other resolution.
 # Portability of this script
 
 I've run OCD on several different distributions, but it might not work on
-yours. Fork this repo and go nuts. `ocd.sh` isn't that long or complicated.
+yours. Fork this repo and go nuts. `ocd.sh` is relatively simple.
+
+I'd love to receive pull requests that make this script more portable, just so long as
+the changes don't result in a script that's too long or complicated to maintain.
 
 ## Alternatives
 
