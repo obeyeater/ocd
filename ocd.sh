@@ -50,6 +50,7 @@ Usage:
 EOF
 )
 
+
 ##########
 # We do a lot of manipulating files based on paths relative to the user's home
 # directory, so this function does some sanity checking to ensure we're only
@@ -365,6 +366,18 @@ ocd_install() {
       return 1
     fi
 
+    # Setup bash completion for OCD.
+    if [[ ! "${OCD_ASSUME_YES}" == "true" ]] && \
+      ocd_ask "Install the bash completion config for OCD? (requires sudo)"; then
+      if [[ -d /etc/bash_completion.d ]]; then
+        echo -e ${_OCD_BASH_COMPLETION_CONFIG} | sudo tee /etc/bash_completion.d/ocd > /dev/null
+        sudo chmod 644 /etc/bash_completion.d/ocd
+        ocd_info "Installed: /etc/bash_completion.d/ocd"
+      else
+        ocd_err "Couldn't install /etc/bash_completion.d/ocd; directory doesn't exist."
+      fi
+    fi
+
     # Display missing Debian packages.
     ocd_missing_pkgs
   else
@@ -372,6 +385,31 @@ ocd_install() {
   fi
 }
 
+_OCD_BASH_COMPLETION_CONFIG=$(cat <<'END'
+_ocd() {
+  local cur prev opts
+  COMPREPLY=()
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  prev="${COMP_WORDS[COMP_CWORD-1]}"
+  opts="install add rm restore backup status export missing-pkgs"
+
+  case "${prev}" in
+    add|rm|status)
+      COMPREPLY=( $(compgen -f -- "${cur}") )
+      ;;
+    *)
+      if [[ "${COMP_WORDS[@]:0:${COMP_CWORD}}" =~ (add|rm|status) ]]; then
+        COMPREPLY=( $(compgen -f -- "${cur}") )
+      else
+        COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+      fi
+      ;;
+  esac
+}
+complete -F _ocd ocd
+complete -F _ocd ocd.sh
+END
+)
 
 main() {
   case "${1-}" in
