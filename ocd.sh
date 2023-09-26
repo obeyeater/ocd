@@ -107,28 +107,6 @@ ocd_ask() {
 }
 
 ##########
-# Install a package via sudo/dpkg. (Debian-only)
-ocd_install_pkg() {
-  if [[ -z "${1-}" ]]; then
-    return 1
-  fi
-
-  ocd_info "Installing ${1}..."
-
-  if command -v apt >/dev/null; then
-    sudo apt-get install -y "${1}"
-  else
-    ocd_err "No \`apt\` available."
-    return 1
-  fi
-
-  # If there are more arguments, call self recursively.
-  if [[ -n "$2" ]]; then
-    ocd_install_pkg "${@:2}"
-  fi
-}
-
-##########
 # Pull changes from git, and push them to  the user's homedirectory.
 ocd_restore() {
   if [[ ! -d "${OCD_GIT_DIR}" ]]; then
