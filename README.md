@@ -38,15 +38,16 @@ ssh-keygen -t ed25519 -f ~/.ssh/your_deploy_key
 Add your new public key to your origin repository. Here are the
 [GitHub instructions for managing deploy keys](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/managing-deploy-keys).
 
-If you'd like to use an existing key, just copy it to the new system and
-set `OCD_IDENT`: 
-
+To use an SSH key, set `OCD_IDENT`:
 ```
 echo 'OCD_IDENT=~/.ssh/your_deploy_key' >> ~/.ocd.conf
 ```
 
 ## Install your dotfiles via OCD
-Finally, install your dotfiles into your home directory:
+OCD will overwrite your local files with whatever is in repository, so make sure the Git repo
+has the most recent versions.
+
+To install your dotfiles into your home directory:
 ```
 ocd install
 ```
