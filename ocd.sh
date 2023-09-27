@@ -342,9 +342,6 @@ ocd_install() {
         ${_OCD_GIT} push -u origin main
       fi
       ocd_restore
-      if [[ -f .bashrc ]]; then
-        source .bashrc
-      fi
     else
       ocd_err "Couldn't clone repository: ${OCD_REPO}"
       exit 1
