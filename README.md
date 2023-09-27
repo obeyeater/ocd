@@ -45,7 +45,7 @@ echo 'OCD_IDENT=~/.ssh/your_deploy_key' >> ~/.ocd.conf
 ```
 
 ## Install your dotfiles via OCD
-OCD will overwrite your local files with whatever is in repository, so make sure the Git repo
+OCD will overwrite your local files with whatever is in the repository, so make sure the Git repo
 has the most recent versions.
 
 To install your dotfiles into your home directory:
@@ -54,12 +54,12 @@ ocd install
 ```
 When you run `ocd install` it does the following:
 
-  * checks if an SSH identity is available (this is necessary to clone a RW git repository)
+  * checks if an SSH identity is available
   * runs `git clone`, syncing your central dotfile repository into your OCD directory; the default destination is `~/.ocd`.
   * creates symlinks in your home directory pointing at versions in `~/.ocd` (the local Git repo).
-  * (Debian-only) tells you which of your favorite packages are missing from the system;
+  * (Debian-only) reports which of your favorite packages are missing from the system;
     * this requires keeping a list of your favorite packages in a file called `~/.favpkgs`.
-  * offers to install `bash` completion for itself (optional, requires `sudo`.)
+  * offers to install `bash` completion for itself; this is optional and requires `sudo`.
 
 # Usage
 ```
