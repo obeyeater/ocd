@@ -233,9 +233,6 @@ ocd_add() {
 
   mkdir -p "${OCD_GIT_DIR}/${_OCD_FN_RELDIR}"
 
-  _FILE_IN_HOME=$(realpath "${OCD_USER_HOME}/${_OCD_FN_RELDIR}/${_OCD_FN_BASENAME}")
-  _FILE_IN_GIT=$(realpath "${OCD_GIT_DIR}/${_OCD_FN_RELDIR}/${_OCD_FN_BASENAME}")
-
   if [[ -f "${_OCD_FN_IN_GIT}" ]]; then
     ocd_err "Already tracked: ${_OCD_FN_IN_GIT}"
     return
