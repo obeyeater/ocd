@@ -38,7 +38,8 @@ ssh-keygen -t ed25519 -f ~/.ssh/your_deploy_key
 Add your new public key to your origin repository. Here are the
 [GitHub instructions for managing deploy keys](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/managing-deploy-keys).
 
-To use an SSH key, set `OCD_IDENT`:
+OCD will work if you have an `ssh-agent` running with the appropriate key/config.
+To use a specific SSH deploy key for all the Git commands, set `OCD_IDENT`:
 ```
 echo 'OCD_IDENT=~/.ssh/your_deploy_key' >> ~/.ocd.conf
 ```
