@@ -5,6 +5,7 @@
 # See https://github.com/nycksw/ocd for detailed information.
 
 CHECK_PERMS() {
+  if [[ ! -f ${1} ]]; then return; fi
   if (( ( 8#$(stat -L -c '%a' ${1}) & 8#002 ) != 0 )); then
     echo "File \"${1}\" may be modified by anyone; exiting." >&2 && exit 1
   fi
