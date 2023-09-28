@@ -11,8 +11,8 @@ CHECK_PERMS() {
   fi
 }; CHECK_PERMS "${BASH_SOURCE[0]}" 
 
-# Globals beginning with "OCD_" may be set separately in "~/.ocd.conf":
-# (Other globals have an underscore prepended, e.g.: _OCD_FN_BASENAME)
+# Globals beginning with "OCD_" may be set separately in "~/.ocd.conf";
+# other globals have an underscore prepended, e.g.: "_OCD_FN_BASENAME".
 
 OCD_CONF="${OCD_CONF:-${HOME}/.ocd.conf}" && CHECK_PERMS "${OCD_CONF}"
 if [[ -f "${OCD_CONF}" ]]; then source <( grep '^OCD_' ${OCD_CONF} ); fi
@@ -57,7 +57,6 @@ Usage:
 EOF
 )
 
-
 ##########
 # We do a lot of manipulating files based on paths relative to the user's home
 # directory, so this function does some sanity checking to ensure we're only
@@ -69,7 +68,6 @@ ocd_filename_split() {
     exit 1
   fi
 
-  #if ! find ${OCD_USER_HOME} -wholename $(realpath ${1}) | grep -q . ; then
   if [[ ! "$(realpath ${1})" == "${OCD_USER_HOME}"* ]]; then
     ocd_err "OCD only works on files within the user's home directory."
     exit 1
