@@ -61,7 +61,7 @@ EOF
 # We do a lot of manipulating files based on paths relative to the user's home
 # directory, so this function does some sanity checking to ensure we're only
 # dealing with regular files, and then splits the path and filename into useful
-# chunks, storing them in these "_FILE_*" globals, documented below, inline.
+# chunks, storing them in these "_OCD_FN_*" globals, documented inline below.
 ocd_filename_split() {
   if [[ ! -f "${1}" ]]; then
     ocd_err "${1} doesn't exist or is not a regular file."
