@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#shellcheck disable=SC1091,SC2086,SC2164
+#shellcheck disable=SC2086
 #
 # OCD: Optimally Configured Dotfiles
 # See https://github.com/nycksw/ocd for detailed information.
