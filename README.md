@@ -80,7 +80,7 @@ make sure they're portable across all the systems you use. For example, my
 `.bashrc` is suitable for *every* system I use, and I put domain-centric or
 host-centric customizations (for example, hosts I use at work) in a separate file.
 
-Consider these lines, which I include at the end of my `.bashrc`:
+Consider these lines, a version of which I include at the end of my `.bashrc`:
 
 ```
 source $HOME/.bashrc_$(hostname -f)
@@ -159,7 +159,7 @@ the changes don't result in a script that's too long or complicated to maintain.
 ## Alternatives
 
 There are other dotfile managers! You should almost certainly use one of them instead of
-this mine. Here's a list:
+this one. Here's a list:
 
 * [dotbot](https://github.com/anishathalye/dotbot)
 * [chezmoi](https://www.chezmoi.io/why-use-chezmoi/)
