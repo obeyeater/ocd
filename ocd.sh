@@ -1,13 +1,11 @@
 #!/usr/bin/env bash
-#shellcheck disable=SC2086
 #
-# OCD: Optimally Configured Dotfiles
-# See https://github.com/nycksw/ocd for detailed information.
+# OCD: Optimally Configured Dotfiles <https://github.com/nycksw/ocd>
 
 CHECK_PERMS() {
-  if [[ ! -f ${1} ]]; then return; fi
-  if (( ( 8#$(stat -L -c '%a' ${1}) & 8#002 ) != 0 )); then
-    echo "File \"${1}\" may be modified by anyone; exiting." >&2 && exit 1
+  test -f "$1" || return
+  if (( ( 8#$(stat -L -c '%a' "$1") & 8#002 ) != 0 )); then
+    echo "File \"$1\" may be modified by anyone; exiting." >&2 && exit 1
   fi
 }; CHECK_PERMS "${BASH_SOURCE[0]}" 
 
@@ -15,7 +13,7 @@ CHECK_PERMS() {
 # other globals have an underscore prepended, e.g.: "_OCD_FN_BASENAME".
 
 OCD_CONF="${OCD_CONF:-${HOME}/.ocd.conf}" && CHECK_PERMS "${OCD_CONF}"
-if [[ -f "${OCD_CONF}" ]]; then source <( grep '^OCD_' ${OCD_CONF} ); fi
+if [[ -f "${OCD_CONF}" ]]; then source <( grep '^OCD_' "${OCD_CONF}" ); fi
 
 # These defaults may be overridden via the environment.
 OCD_REPO="${OCD_REPO:-git@github.com:username/your-dotfiles.git}"
@@ -28,7 +26,7 @@ OCD_ASSUME_YES="${OCD_ASSUME_YES:-false}"  # Set to true for non-interactive/tes
 _OCD_IGNORE_RE="./.git"
 
 # For git commands that need OCD_GIT_DIR as the working directory.
-_OCD_GIT="git -C ${OCD_GIT_DIR}"
+_OCD_GIT_CMD="git -C ${OCD_GIT_DIR}"
 
 # Pretty stdio/stderr helpers.
 ocd_info() { echo  -e "\e[1;32m\u2713\e[0;0m ${*}"; }    # '✓ ...' (green)
@@ -63,22 +61,22 @@ EOF
 # dealing with regular files, and then splits the path and filename into useful
 # chunks, storing them in these "_OCD_FN_*" globals, documented inline below.
 ocd_filename_split() {
-  if [[ ! -f "${1}" ]]; then
-    ocd_err "${1} doesn't exist or is not a regular file."
+  if [[ ! -f "$1" ]]; then
+    ocd_err "$1 doesn't exist or is not a regular file."
     exit 1
   fi
 
-  if [[ ! "$(realpath ${1})" == "${OCD_USER_HOME}"* ]]; then
+  if [[ ! "$(realpath "$1")" == "${OCD_USER_HOME}"* ]]; then
     ocd_err "OCD only works on files within the user's home directory."
     exit 1
   fi
 
   # Just the filename with no directory, e.g.:
   #   ~/.vim/colors/solarized.vim -> solarized.vim
-  _OCD_FN_BASENAME=$(basename "${1}")
+  _OCD_FN_BASENAME=$(basename "$1")
   # The directory relative to the user's homedir, e.g.:
   #   ~/.vim/colors/solarized.vim -> .vim/colors
-  _OCD_FN_RELDIR=$(dirname "$(realpath -ms --relative-to="${OCD_USER_HOME}" "${1}")")
+  _OCD_FN_RELDIR=$(dirname "$(realpath -ms --relative-to="${OCD_USER_HOME}" "$1")")
   # The full path of the filename in the user's homedir, e.g.:
   #   ~/.vim/colors/solarized.vim -> /home/luser/.vim/colors/solarized.vim
   _OCD_FN_IN_HOME=$(realpath --no-symlinks "${OCD_USER_HOME}/${_OCD_FN_RELDIR}/${_OCD_FN_BASENAME}")
@@ -116,13 +114,13 @@ ocd_restore() {
   fi
 
   ocd_info "Running: git-pull:"
-  ${_OCD_GIT} pull || {
+  ${_OCD_GIT_CMD} pull || {
     ocd_err  "error: couldn't git-pull; check status in ${OCD_GIT_DIR}"
     exit 1
   }
 
-  files=$(cd ${OCD_GIT_DIR}; find . -type f -o -type l | grep -Ev  "${_OCD_IGNORE_RE}")
-  dirs=$(cd ${OCD_GIT_DIR}; find . -type d | grep -Ev  "${_OCD_IGNORE_RE}")
+  files=$(cd "${OCD_GIT_DIR}"; find . -type f -o -type l | grep -Ev  "${_OCD_IGNORE_RE}")
+  dirs=$(cd "${OCD_GIT_DIR}"; find . -type d | grep -Ev  "${_OCD_IGNORE_RE}")
 
   for dir in ${dirs}; do
     mkdir -p "${OCD_USER_HOME}/${dir}"
@@ -132,7 +130,7 @@ ocd_restore() {
   pushd "${OCD_GIT_DIR}" 1>/dev/null
 
   for existing_file in ${files}; do
-    new_file="$(realpath -s ${OCD_USER_HOME}/${existing_file})"
+    new_file="$(realpath -s "${OCD_USER_HOME}"/"${existing_file}")"
     # Only restore file if it doesn't already exist, or if it has changed.
     if [[ ! -f "${new_file}" ]] || ! cmp --silent "${existing_file}" "${new_file}"; then
       ocd_info "  ${existing_file} -> ${new_file}"
@@ -159,16 +157,16 @@ ocd_restore() {
 # Show status of local git repo, and optionally commit/push changes upstream.
 ocd_backup() {
   ocd_info "git status in ${OCD_GIT_DIR}:\\n"
-  ${_OCD_GIT} status
-  if ! ${_OCD_GIT} status | grep -q "nothing to commit"; then
-    ${_OCD_GIT} diff
+  ${_OCD_GIT_CMD} status
+  if ! ${_OCD_GIT_CMD} status | grep -q "nothing to commit"; then
+    ${_OCD_GIT_CMD} diff
     if ocd_ask "Commit everything and push to '${OCD_REPO}'?"; then
       if [[ "${OCD_ASSUME_YES}" == "true" ]]; then
-        ${_OCD_GIT} commit -a -m "Non-interactive commit."
+        ${_OCD_GIT_CMD} commit -a -m "Non-interactive commit."
       else
-        ${_OCD_GIT} commit -a
+        ${_OCD_GIT_CMD} commit -a
       fi
-      ${_OCD_GIT} push
+      ${_OCD_GIT_CMD} push
     fi
   fi
 }
@@ -178,7 +176,7 @@ ocd_backup() {
 ocd_status() {
   # If an arg is passed, assume it's a file and report on whether it's tracked.
   if [[ -n "${1-}" ]]; then
-    ocd_filename_split ${1}  # Populate "_FILE_*" globals.
+    ocd_filename_split "$1"  # Populate "_OCD_FN_*" globals.
 
     if [[ -f "${_OCD_FN_IN_GIT}" ]]; then
       ocd_info "is tracked"
@@ -196,7 +194,7 @@ ocd_status() {
   printf '\n'
 
   ocd_info "git status:"
-  ${_OCD_GIT} status
+  ${_OCD_GIT_CMD} status
 }
 
 ##########
@@ -211,7 +209,7 @@ ocd_missing_pkgs() {
 
     if [[ -n "${missing_pkgs}" ]]; then
       ocd_info "Missing packages:"
-      echo ${missing_pkgs}
+      echo "${missing_pkgs}"
     fi
   else
     ocd_err "This system lacks \`dpkg\`. Not a Debian-based system?"
@@ -227,7 +225,7 @@ ocd_add() {
     exit 1
   fi
 
-  ocd_filename_split ${1}  # Populate "_FILE_*" globals.
+  ocd_filename_split "$1"  # Populate "_OCD_FN_*" globals."
 
   mkdir -p "${OCD_GIT_DIR}/${_OCD_FN_RELDIR}"
 
@@ -240,7 +238,7 @@ ocd_add() {
   mv "${_OCD_FN_IN_HOME}" "${_OCD_FN_IN_GIT}"
   ln -sr "${_OCD_FN_IN_GIT}" "${_OCD_FN_IN_HOME}"
 
-  ${_OCD_GIT} add "${_OCD_FN_RELDIR}/${_OCD_FN_BASENAME}"
+  ${_OCD_GIT_CMD} add "${_OCD_FN_RELDIR}/${_OCD_FN_BASENAME}"
 
   ocd_info "Added: ${_OCD_FN_IN_HOME}"
 
@@ -258,7 +256,7 @@ ocd_rm() {
     exit 1
   fi
 
-  ocd_filename_split ${1}  # Populate "_FILE_*" globals.
+  ocd_filename_split "$1"  # Populate "_OCD_FN_*" globals.
 
   if [[ ! -f "${_OCD_FN_IN_GIT}" ]]; then
     ocd_err "Not tracked: ${_OCD_FN_IN_HOME}"
@@ -267,7 +265,7 @@ ocd_rm() {
 
   rm -f "${_OCD_FN_IN_HOME}"  # Remove symlink.
   cp -f "${_OCD_FN_IN_GIT}" "${_OCD_FN_IN_HOME}"  # Replace original.
-  ${_OCD_GIT} rm -f "${_OCD_FN_RELDIR}/${_OCD_FN_BASENAME}"
+  ${_OCD_GIT_CMD} rm -f "${_OCD_FN_RELDIR}/${_OCD_FN_BASENAME}"
 
   ocd_info "Removed: ${_OCD_FN_IN_HOME}"
 
@@ -283,10 +281,10 @@ ocd_rm() {
 ocd_export() {
   if [[ -n "$1" ]]; then
     OCD_TMP=$(mktemp -d)
-    rsync -av ${OCD_GIT_DIR}/ ${OCD_TMP}/
-    ocd_info "$(date +%Y-%m-%d)" > ${OCD_TMP}/.ocd_exported
-    tar -C ${OCD_TMP} --exclude ${_OCD_IGNORE_RE} -czvpf $1 .
-    rm -rf ${OCD_TMP}
+    rsync -av "${OCD_GIT_DIR}"/ "${OCD_TMP}"/
+    ocd_info "$(date +%Y-%m-%d)" > "${OCD_TMP}"/.ocd_exported
+    tar -C "${OCD_TMP}" --exclude "${_OCD_IGNORE_RE}" -czvpf "$1" .
+    rm -rf "${OCD_TMP}"
   else
     ocd_err "Must supply a filename for the new tar.gz archive."
   fi
@@ -327,17 +325,17 @@ ocd_install() {
     fi
 
     if git clone "${OCD_REPO}" "${OCD_GIT_DIR}"; then
-      if [[ -z "$(${_OCD_GIT} branch -a)" ]]; then
+      if [[ -z "$(${_OCD_GIT_CMD} branch -a)" ]]; then
         # You can't push to a bare repo with no commits, because the main
         # branch won't exist yet.  # So, we have to check for that and do
         # an initial commit or else subsequent git commands # will not work.
         ocd_info "Notice: ${OCD_REPO} looks like a bare repo with no commits;"
         ocd_info "  commiting and pushing README.md to create a main branch."
         printf "https://github.com/nycksw/ocd\n" > "${OCD_GIT_DIR}"/README.md
-        ${_OCD_GIT} add .
-        ${_OCD_GIT} commit -m "Initial commit."
-        ${_OCD_GIT} branch -M main
-        ${_OCD_GIT} push -u origin main
+        ${_OCD_GIT_CMD} add .
+        ${_OCD_GIT_CMD} commit -m "Initial commit."
+        ${_OCD_GIT_CMD} branch -M main
+        ${_OCD_GIT_CMD} push -u origin main
       fi
       ocd_restore
     else
