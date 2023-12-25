@@ -281,9 +281,19 @@ ocd_rm() {
 ocd_export() {
   if [[ -n "$1" ]]; then
     OCD_TMP=$(mktemp -d)
-    rsync -av "${OCD_GIT_DIR}"/ "${OCD_TMP}"/
-    ocd_info "$(date +%Y-%m-%d)" > "${OCD_TMP}"/.ocd_exported
-    tar -C "${OCD_TMP}" --exclude "${_OCD_IGNORE_RE}" -czvpf "$1" .
+    rsync -a "${OCD_GIT_DIR}"/ "${OCD_TMP}"/
+    rm -rf "${OCD_TMP}"/.git
+    echo -e "exported $(date +%Y-%m-%d)" > "${OCD_TMP}"/.ocd_exported
+
+    # We remove the write permissions mainly just as a reminder that changes to
+    # the files will be lost unless manually copied over. So, require an extra
+    # step (e.g., `chmod ...` or ":w!" in vim) before writing to them.
+    find ${OCD_TMP} -type f -print0 | xargs -0 chmod 400
+
+    tar -C "${OCD_TMP}" --exclude "${_OCD_IGNORE_RE}" -czpf "$1" .
+    tar -tvzpf "$1" .
+    echo && ocd_info "Export done."
+    ls -lh "$1"
     rm -rf "${OCD_TMP}"
   else
     ocd_err "Must supply a filename for the new tar.gz archive."
