@@ -21,7 +21,7 @@ on Github) and this one shellscript.
 ## Download the OCD script
 Replace `~/bin` with wherever you like to keep your tools. Make sure it's in your `PATH`.
 ```
-curl https://raw.githubusercontent.com/nycksw/ocd/master/ocd.sh -o ~/bin/ocd
+curl https://raw.githubusercontent.com/nycksw/ocd/main/ocd.sh -o ~/bin/ocd
 chmod +x ~/bin/ocd
 ```
 ## Set the repository
@@ -30,7 +30,7 @@ You'll need a Git repository for storing your dotfiles. Put its URL in your OCD 
 echo 'OCD_REPO=git@github.com:luser/my-dotfiles.git' >> ~/.ocd.conf
 ```
 ## Install an SSH key for the repository
-Below shows how to create a new SSH keypair for the host. 
+Below shows how to create a new SSH keypair for the host.
 ```
 ssh-keygen -t ed25519 -f ~/.ssh/your_deploy_key
 ```
@@ -66,7 +66,7 @@ When you run `ocd install` it does the following:
 ocd install:        install files from <OCD_REPO>
 ocd add FILE:       track a new file in the repository
 ocd rm FILE:        stop tracking a file in the repository
-ocd restore:        pull from git master and copy files to homedir
+ocd restore:        pull from git main and copy files to homedir
 ocd backup:         push all local changes upstream
 ocd status [FILE]:  check if a file is tracked, or if there are uncommited changes
 ocd export FILE:    create a tar.gz archive with everything in ~/.ocd
@@ -99,7 +99,7 @@ local `~/.ocd` git branch, so there's no need to copy changes anywhere before
 committing. Just edit in place and run `ocd backup`.
 
 There are also helper functions: `ocd status` tells me if I'm behind the
-master, and `ocd missing-pkgs` tells me if my installed
+main, and `ocd missing-pkgs` tells me if my installed
 packages differ from my basic preferences recorded in `~/.favpkgs`; for
 example, your `openbox` autostart may call programs that are not installed
 by default on a new system, and so `ocd missing-pkgs` is just a very simple way
@@ -123,8 +123,8 @@ back to my Git repository. For example:
 $ ocd backup
 ✓ git status in /home/e/.ocd:
 
-On branch master
-Your branch is up to date with 'origin/master'.
+On branch main
+Your branch is up to date with 'origin/main'.
 
 Changes not staged for commit:
   (use "git add <file>..." to update what will be committed)
@@ -132,11 +132,11 @@ Changes not staged for commit:
         modified:   .bashrc
 [...]
 Commit everything and push to 'git@github.com:nycksw/dotfiles.git'? [NO/yes]: yes
-[master 5ac968a] Remove bash builder line.
+[main 5ac968a] Remove bash builder line.
  1 file changed, 1 deletion(-)
 [...]
 To github.com:nycksw/dotfiles.git
-   684882f..5ac968a  master -> master
+   684882f..5ac968a  main -> main
 ```
 
 # Caveats
@@ -144,7 +144,7 @@ To github.com:nycksw/dotfiles.git
 ## Merges
 Occasionally I'll change something on more than one system without
 running `ocd backup`, and git will complain that it can't run `git pull` without
-first committing local changes. This is easy to fix by changing into the `~/.ocd` 
+first committing local changes. This is easy to fix by changing into the `~/.ocd`
 directory and doing a typical merge, a simple `git push`, `git checkout -f $filename`
 to overwrite changes, or some other resolution.
 
