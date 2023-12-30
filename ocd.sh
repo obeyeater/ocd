@@ -310,7 +310,7 @@ ocd_install() {
       # Check if an ssh-agent is active with identities in memory.
       get_idents() { ssh-add -l 2>/dev/null; }
 
-      if [[ -z "$(get_idents)" && -z "${OCD_IDENT}" ]]; then
+      if [[ -z "$(get_idents)" && -z "${OCD_IDENT-}" ]]; then
         if ! ocd_ask "No SSH identities are available for \"${OCD_REPO}\".\nContinue anyway?"
         then
           ocd_err "Quitting due to missing SSH identities."
