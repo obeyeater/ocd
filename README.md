@@ -21,8 +21,10 @@ on Github) and this one shellscript.
 ## Download the OCD script
 Replace `~/bin` with wherever you like to keep your tools. Make sure it's in your `PATH`.
 ```
+mkdir -p ~/bin
 curl https://raw.githubusercontent.com/nycksw/ocd/main/ocd.sh -o ~/bin/ocd
 chmod +x ~/bin/ocd
+PATH="$PATH:~/bin"
 ```
 ## Set the repository
 You'll need a Git repository for storing your dotfiles. Put its URL in your OCD config:
