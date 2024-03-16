@@ -10,7 +10,7 @@ CHECK_PERMS() {
 }; CHECK_PERMS "${BASH_SOURCE[0]}" 
 
 # Globals beginning with "OCD_" may be set separately in "~/.ocd.conf";
-# other globals have an underscore prepended, e.g.: "_OCD_FN_BASENAME".
+# other globals have an underscore prepended, e.g.: "_OCD_FILE_BASENAME".
 
 OCD_CONF="${OCD_CONF:-${HOME}/.ocd.conf}" && CHECK_PERMS "${OCD_CONF}"
 if [[ -f "${OCD_CONF}" ]]; then source <( grep '^OCD_' "${OCD_CONF}" ); fi
@@ -59,7 +59,7 @@ EOF
 # We do a lot of manipulating files based on paths relative to the user's home
 # directory, so this function does some sanity checking to ensure we're only
 # dealing with regular files, and then splits the path and filename into useful
-# chunks, storing them in these "_OCD_FN_*" globals, documented inline below.
+# chunks, storing them in these "_OCD_FILE_*" globals, documented inline below.
 ocd_filename_split() {
   if [[ ! -f "$1" ]]; then
     ocd_err "$1 doesn't exist or is not a regular file."
@@ -73,16 +73,16 @@ ocd_filename_split() {
 
   # Just the filename with no directory, e.g.:
   #   ~/.vim/colors/solarized.vim -> solarized.vim
-  _OCD_FN_BASENAME=$(basename "$1")
+  _OCD_FILE_BASENAME=$(basename "$1")
   # The directory relative to the user's homedir, e.g.:
   #   ~/.vim/colors/solarized.vim -> .vim/colors
-  _OCD_FN_RELDIR=$(dirname "$(realpath -ms --relative-to="${OCD_USER_HOME}" "$1")")
+  _OCD_FILE_RELDIR=$(dirname "$(realpath -ms --relative-to="${OCD_USER_HOME}" "$1")")
   # The full path of the filename in the user's homedir, e.g.:
   #   ~/.vim/colors/solarized.vim -> /home/luser/.vim/colors/solarized.vim
-  _OCD_FN_IN_HOME=$(realpath --no-symlinks "${OCD_USER_HOME}/${_OCD_FN_RELDIR}/${_OCD_FN_BASENAME}")
+  _OCD_FILE_IN_HOME=$(realpath --no-symlinks "${OCD_USER_HOME}/${_OCD_FILE_RELDIR}/${_OCD_FILE_BASENAME}")
   # The full path of the filename in the Git directory, e.g.:
   #   ~/.vim/colors/solarized.vim -> /home/luser/.ocd/.vim/colors/solarized.vim
-  _OCD_FN_IN_GIT=$(realpath "${OCD_GIT_DIR}/${_OCD_FN_RELDIR}/${_OCD_FN_BASENAME}")
+  _OCD_FILE_IN_GIT=$(realpath "${OCD_GIT_DIR}/${_OCD_FILE_RELDIR}/${_OCD_FILE_BASENAME}")
 }
 
 ocd_ask() {
@@ -176,9 +176,9 @@ ocd_backup() {
 ocd_status() {
   # If an arg is passed, assume it's a file and report on whether it's tracked.
   if [[ -n "${1-}" ]]; then
-    ocd_filename_split "$1"  # Populate "_OCD_FN_*" globals.
+    ocd_filename_split "$1"  # Populate "_OCD_FILE_*" globals.
 
-    if [[ -f "${_OCD_FN_IN_GIT}" ]]; then
+    if [[ -f "${_OCD_FILE_IN_GIT}" ]]; then
       ocd_info "is tracked"
     else
       ocd_info "not tracked"
@@ -225,22 +225,22 @@ ocd_add() {
     exit 1
   fi
 
-  ocd_filename_split "$1"  # Populate "_OCD_FN_*" globals."
+  ocd_filename_split "$1"  # Populate "_OCD_FILE_*" globals."
 
-  mkdir -p "${OCD_GIT_DIR}/${_OCD_FN_RELDIR}"
+  mkdir -p "${OCD_GIT_DIR}/${_OCD_FILE_RELDIR}"
 
-  if [[ -f "${_OCD_FN_IN_GIT}" ]]; then
-    ocd_err "Already tracked: ${_OCD_FN_IN_GIT}"
+  if [[ -f "${_OCD_FILE_IN_GIT}" ]]; then
+    ocd_err "Already tracked: ${_OCD_FILE_IN_GIT}"
     return
   fi
 
   # Add file to local Git repository and symlink to it.
-  mv "${_OCD_FN_IN_HOME}" "${_OCD_FN_IN_GIT}"
-  ln -sr "${_OCD_FN_IN_GIT}" "${_OCD_FN_IN_HOME}"
+  mv "${_OCD_FILE_IN_HOME}" "${_OCD_FILE_IN_GIT}"
+  ln -sr "${_OCD_FILE_IN_GIT}" "${_OCD_FILE_IN_HOME}"
 
-  ${_OCD_GIT_CMD} add "${_OCD_FN_RELDIR}/${_OCD_FN_BASENAME}"
+  ${_OCD_GIT_CMD} add "${_OCD_FILE_RELDIR}/${_OCD_FILE_BASENAME}"
 
-  ocd_info "Added: ${_OCD_FN_IN_HOME}"
+  ocd_info "Added: ${_OCD_FILE_IN_HOME}"
 
   # If there are more arguments, call self.
   if [[ -n "${2:-}" ]]; then
@@ -256,18 +256,18 @@ ocd_rm() {
     exit 1
   fi
 
-  ocd_filename_split "$1"  # Populate "_OCD_FN_*" globals.
+  ocd_filename_split "$1"  # Populate "_OCD_FILE_*" globals.
 
-  if [[ ! -f "${_OCD_FN_IN_GIT}" ]]; then
-    ocd_err "Not tracked: ${_OCD_FN_IN_HOME}"
+  if [[ ! -f "${_OCD_FILE_IN_GIT}" ]]; then
+    ocd_err "Not tracked: ${_OCD_FILE_IN_HOME}"
     exit 1
   fi
 
-  rm -f "${_OCD_FN_IN_HOME}"  # Remove symlink.
-  cp -f "${_OCD_FN_IN_GIT}" "${_OCD_FN_IN_HOME}"  # Replace original.
-  ${_OCD_GIT_CMD} rm -f "${_OCD_FN_RELDIR}/${_OCD_FN_BASENAME}"
+  rm -f "${_OCD_FILE_IN_HOME}"  # Remove symlink.
+  cp -f "${_OCD_FILE_IN_GIT}" "${_OCD_FILE_IN_HOME}"  # Replace original.
+  ${_OCD_GIT_CMD} rm -f "${_OCD_FILE_RELDIR}/${_OCD_FILE_BASENAME}"
 
-  ocd_info "Removed: ${_OCD_FN_IN_HOME}"
+  ocd_info "Removed: ${_OCD_FILE_IN_HOME}"
 
   # If there are more arguments, call self.
   if [[ -n "${2:-}" ]]; then
