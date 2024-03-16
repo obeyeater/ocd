@@ -10,7 +10,7 @@ set -o pipefail  # Catch errs from piped cmds.
 
 OCD_TEST_FAILURES="${OCD_TEST_FAILURES:-}"
 
-test_header() {
+show_header() {
   # Info header in green.
   echo -e "\\n\\e[1;32mRUNNING: ${FUNCNAME[1]}\\e[0;0m"
   echo
@@ -50,7 +50,7 @@ test_install() {
 }
 
 test_file_tracking() {
-  test_header
+  show_header
   # Add untracked files to the homedir.
   touch "${OCD_USER_HOME}/fred" "${OCD_USER_HOME}/a/b/c/wilma"
 
@@ -58,7 +58,7 @@ test_file_tracking() {
   ./ocd.sh add "${OCD_USER_HOME}"/fred "${OCD_USER_HOME}"/a/b/c/wilma
 	test -f "${OCD_GIT_DIR}"/fred || test_fail
 	test -f "${OCD_GIT_DIR}"/a/b/c/wilma || test_fail
- 
+
 	# Stop tracking a file.
   ./ocd.sh rm "${OCD_USER_HOME}"/fred "${OCD_USER_HOME}"/a/b/c/wilma
 	test ! -f "${OCD_GIT_DIR}"/fred || test_fail
@@ -83,7 +83,7 @@ test_export() {
 }
 
 teardown() {
-  test_header
+  show_header
   rm -rf "${OCD_GIT_DIR}"
   rm -rf "${OCD_USER_HOME}"
   rm -rf "${OCD_REPO}"

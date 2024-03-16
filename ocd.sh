@@ -288,7 +288,7 @@ ocd_export() {
     # We remove the write permissions mainly just as a reminder that changes to
     # the files will be lost unless manually copied over. So, require an extra
     # step (e.g., `chmod ...` or ":w!" in vim) before writing to them.
-    find ${OCD_TMP} -type f -print0 | xargs -0 chmod 400
+    find "${OCD_TMP}" -type f -print0 | xargs -0 chmod 400
 
     tar -C "${OCD_TMP}" --exclude "${_OCD_IGNORE_RE}" -czpf "$1" .
     tar -tvzpf "$1" .
@@ -297,6 +297,16 @@ ocd_export() {
     rm -rf "${OCD_TMP}"
   else
     ocd_err "Must supply a filename for the new tar.gz archive."
+  fi
+}
+
+ocd_key() {
+  get_idents() { ssh-add -l 2>/dev/null; }
+  if [[ -z "$(get_idents)" && -z "${OCD_IDENT-}" ]]; then
+    if ! ocd_ask "No SSH identities are available for \"${OCD_REPO}\".\nContinue anyway?"; then
+      ocd_err "Quitting due to missing SSH identities."
+        exit 1
+    fi
   fi
 }
 
@@ -316,17 +326,7 @@ ocd_install() {
 
     # Check if we need SSH auth for getting the repo.
     if [[ "${OCD_REPO}" == *"@"* ]]; then
-
-      # Check if an ssh-agent is active with identities in memory.
-      get_idents() { ssh-add -l 2>/dev/null; }
-
-      if [[ -z "$(get_idents)" && -z "${OCD_IDENT-}" ]]; then
-        if ! ocd_ask "No SSH identities are available for \"${OCD_REPO}\".\nContinue anyway?"
-        then
-          ocd_err "Quitting due to missing SSH identities."
-          exit 1
-        fi
-      fi
+      ocd_key
     fi
 
     # Fetch the repository.
