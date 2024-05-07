@@ -38,7 +38,7 @@ if [[ -n "${OCD_IDENT-}" ]]; then
     ocd_err "Couldn't find SSH identity from ${OCD_CONF}: ${OCD_IDENT}"
     exit 1
   fi
-  GIT_SSH_COMMAND="ssh -i ${OCD_IDENT}"
+  GIT_SSH_COMMAND="ssh -o IdentityAgent=none -i ${OCD_IDENT}"
   export GIT_SSH_COMMAND
 fi
 
