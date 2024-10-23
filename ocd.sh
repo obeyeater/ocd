@@ -32,6 +32,11 @@ _OCD_GIT_CMD="git -C ${OCD_GIT_DIR}"
 ocd_info() { echo  -e "\e[1;32m\u2713\e[0;0m ${*}"; }    # '✓ ...' (green)
 ocd_err() { echo -e "\e[1;31m\u2717\e[0;0m ${*}" >&2; }  # '✗ ...' (red)
 
+for cmd in git stat realpath; do
+  command -v "$cmd" >/dev/null 2>&1 || \
+      { ocd_err "OCD requires '$cmd' but it's not installed."; exit 1; }
+done
+
 # Optional SSH identity for the git repository.
 if [[ -n "${OCD_IDENT-}" ]]; then
   if [[ ! -f "${OCD_IDENT}" ]]; then
@@ -44,14 +49,14 @@ fi
 
 USAGE=$(cat << EOF
 Usage:
-  ocd install:        install files from ${OCD_REPO}
-  ocd add FILE:       track a new file in the repository
-  ocd rm FILE:        stop tracking a file in the repository
-  ocd restore:        pull from git master and copy files to homedir
-  ocd backup:         push all local changes to master
-  ocd status [FILE]:  check if a file is tracked, or if there are uncommited changes
-  ocd export FILE:    create a tar.gz archive with everything in ${OCD_GIT_DIR}
-  ocd missing-pkgs:   compare system against ${OCD_FAV_PKGS} and report missing
+  ocd install           install files from ${OCD_REPO}
+  ocd add FILE [FILES]  track a new file in the repository
+  ocd rm FILE [FILES]   stop tracking a file in the repository
+  ocd restore           pull from git master and copy files to homedir
+  ocd backup            push all local changes to master
+  ocd status [FILE]     check if a file is tracked, or if there are uncommited changes
+  ocd export FILE       create a tar.gz archive with everything in ${OCD_GIT_DIR}
+  ocd missing-pkgs      compare system against ${OCD_FAV_PKGS} and report missing
 EOF
 )
 
@@ -86,23 +91,14 @@ ocd_filename_split() {
 }
 
 ocd_ask() {
-  if [[ "${OCD_ASSUME_YES}" == "true" ]]; then
-    return
-  fi
-  prompt="${*} [NO/yes]: "
-  echo -ne "${prompt}"
+  [[ "${OCD_ASSUME_YES}" == "true" ]] && return 0
   while true; do
-    local answer
-    read -r answer
-    if [[ -z "${answer}" ]]; then
-        return 1  # Empty response defaults to "no".
-    elif [[ "${answer,,}" == "yes" || "${answer,,}" == "y" ]];then
-      return 0
-    elif [[ "${answer,,}" == "no" || "${answer,,}" == "n" ]];then
-      return 1
-    else
-      echo -ne "${prompt}"
-    fi
+    read -rp "${*} [NO/yes]: " answer
+    case "${answer,,}" in
+      y|yes) return 0 ;;
+      n|no|'') return 1 ;;
+      *) echo "Please answer yes or no." ;;
+    esac
   done
 }
 
@@ -127,21 +123,22 @@ ocd_restore() {
   done
 
   ocd_info  "Restoring..."
-  pushd "${OCD_GIT_DIR}" 1>/dev/null
+  (
+    cd "${OCD_GIT_DIR}"
 
-  for existing_file in ${files}; do
-    new_file="$(realpath -s "${OCD_USER_HOME}"/"${existing_file}")"
-    # Only restore file if it doesn't already exist, or if it has changed.
-    if [[ ! -f "${new_file}" ]] || ! cmp --silent "${existing_file}" "${new_file}"; then
-      ocd_info "  ${existing_file} -> ${new_file}"
-      if [[ -f "${new_file}" ]]; then
-        rm -f "${new_file}"
+    for existing_file in ${files}; do
+      new_file="$(realpath -s "${OCD_USER_HOME}"/"${existing_file}")"
+      # Only restore file if it doesn't already exist, or if it has changed.
+      if [[ ! -f "${new_file}" ]] || ! cmp --silent "${existing_file}" "${new_file}"; then
+        ocd_info "  ${existing_file} -> ${new_file}"
+        if [[ -f "${new_file}" ]]; then
+          rm -f "${new_file}"
+        fi
+        # Link files from home directory to files in ~/.ocd repo.
+        ln -sr "${OCD_GIT_DIR}/${existing_file}" "${new_file}"
       fi
-      # Link files from home directory to files in ~/.ocd repo.
-      ln -sr "${OCD_GIT_DIR}/${existing_file}" "${new_file}"
-    fi
-  done
-  popd 1>/dev/null
+    done
+  )
 
   # Some changes require cleanup that OCD won't handle; e.g., if you rename a
   # file the old file will remain. Housekeeping commands that need to be run
@@ -156,9 +153,9 @@ ocd_restore() {
 ##########
 # Show status of local git repo, and optionally commit/push changes upstream.
 ocd_backup() {
-  ocd_info "git status in ${OCD_GIT_DIR}:\\n"
+  ocd_info "git status in ${OCD_GIT_DIR}:\n"
   ${_OCD_GIT_CMD} status
-  if ! ${_OCD_GIT_CMD} status | grep -q "nothing to commit"; then
+  if ! ${_OCD_GIT_CMD} diff-index --quiet HEAD --; then
     ${_OCD_GIT_CMD} diff
     if ocd_ask "Commit everything and push to '${OCD_REPO}'?"; then
       if [[ "${OCD_ASSUME_YES}" == "true" ]]; then
@@ -279,25 +276,11 @@ ocd_rm() {
 # Create a tar.gz archive with everything in ~/.ocd. This is useful for
 # exporting your dotfiles to another host where you don't want to run OCD.
 ocd_export() {
-  if [[ -n "$1" ]]; then
-    OCD_TMP=$(mktemp -d)
-    rsync -a "${OCD_GIT_DIR}"/ "${OCD_TMP}"/
-    rm -rf "${OCD_TMP}"/.git
-    echo -e "exported $(date +%Y-%m-%d)" > "${OCD_TMP}"/.ocd_exported
-
-    # We remove the write permissions mainly just as a reminder that changes to
-    # the files will be lost unless manually copied over. So, require an extra
-    # step (e.g., `chmod ...` or ":w!" in vim) before writing to them.
-    find "${OCD_TMP}" -type f -print0 | xargs -0 chmod 400
-
-    tar -C "${OCD_TMP}" --exclude "${_OCD_IGNORE_RE}" -czpf "$1" .
-    tar -tvzpf "$1" .
-    echo && ocd_info "Export done."
-    ls -lh "$1"
-    rm -rf "${OCD_TMP}"
-  else
-    ocd_err "Must supply a filename for the new tar.gz archive."
-  fi
+  [[ -n "$1" ]] || { ocd_err "Must supply a filename for the new tar.gz archive."; exit 1; }
+  tar -C "$OCD_GIT_DIR" --exclude="${_OCD_IGNORE_RE}" -czf "$1" .
+  tar -tvzf "$1"
+  ocd_info "Export done."
+  ls -lh "$1"
 }
 
 ocd_key() {
@@ -432,10 +415,6 @@ main() {
 
 # Execute main function if script wasn't sourced.
 if [[ "$0" = "${BASH_SOURCE[0]}" ]]; then
-
-  set -o errexit   # Exit on error.
-  set -o nounset   # Don't use undeclared variables.
-  set -o pipefail  # Catch errs from piped cmds.
 
   main "$@"
 fi
