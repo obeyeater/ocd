@@ -416,5 +416,9 @@ main() {
 # Execute main function if script wasn't sourced.
 if [[ "$0" = "${BASH_SOURCE[0]}" ]]; then
 
+  set -o errexit   # Exit on error.
+  set -o nounset   # Don't use undeclared variables.
+  set -o pipefail  # Catch errs from piped cmds.
+
   main "$@"
 fi
