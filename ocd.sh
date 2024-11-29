@@ -7,7 +7,7 @@ CHECK_PERMS() {
   if (( ( 8#$(stat -L -c '%a' "$1") & 8#002 ) != 0 )); then
     echo "File \"$1\" may be modified by anyone; exiting." >&2 && exit 1
   fi
-}; CHECK_PERMS "${BASH_SOURCE[0]}" 
+}; CHECK_PERMS "${BASH_SOURCE[0]}"
 
 # Globals beginning with "OCD_" may be set separately in "~/.ocd.conf";
 # other globals have an underscore prepended, e.g.: "_OCD_FILE_BASENAME".
@@ -87,7 +87,7 @@ ocd_filename_split() {
   _OCD_FILE_IN_HOME=$(realpath --no-symlinks "${OCD_USER_HOME}/${_OCD_FILE_RELDIR}/${_OCD_FILE_BASENAME}")
   # The full path of the filename in the Git directory, e.g.:
   #   ~/.vim/colors/solarized.vim -> /home/luser/.ocd/.vim/colors/solarized.vim
-  _OCD_FILE_IN_GIT=$(realpath "${OCD_GIT_DIR}/${_OCD_FILE_RELDIR}/${_OCD_FILE_BASENAME}")
+  _OCD_FILE_IN_GIT="${OCD_GIT_DIR}/${_OCD_FILE_RELDIR}/${_OCD_FILE_BASENAME}"
 }
 
 ocd_ask() {

@@ -53,11 +53,15 @@ test_file_tracking() {
   show_header
   # Add untracked files to the homedir.
   touch "${OCD_USER_HOME}/fred" "${OCD_USER_HOME}/a/b/c/wilma"
+  mkdir -p ${OCD_USER_HOME}/d/e/f
+  touch "${OCD_USER_HOME}/d/e/f/barney"
 
 	# Add files from homedir to the repo.
-  ./ocd.sh add "${OCD_USER_HOME}"/fred "${OCD_USER_HOME}"/a/b/c/wilma
+  ./ocd.sh add "${OCD_USER_HOME}"/fred "${OCD_USER_HOME}"/a/b/c/wilma \
+      "${OCD_USER_HOME}"/d/e/f/barney
 	test -f "${OCD_GIT_DIR}"/fred || test_fail
 	test -f "${OCD_GIT_DIR}"/a/b/c/wilma || test_fail
+	test -f "${OCD_GIT_DIR}"/d/e/f/barney || test_fail
 
 	# Stop tracking a file.
   ./ocd.sh rm "${OCD_USER_HOME}"/fred "${OCD_USER_HOME}"/a/b/c/wilma
